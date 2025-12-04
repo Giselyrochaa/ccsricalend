@@ -1,4 +1,4 @@
-      <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -55,6 +55,7 @@
                 padding: 0 !important;
                 resize: none; 
             }
+            /* Cores Forçadas */
             .bg-blue-100 { background-color: #dbeafe !important; }
             .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
             .bg-green-100 { background-color: #dcfce7 !important; }
@@ -91,7 +92,7 @@
             </h3>
             <p id="modal-message" class="text-gray-600 mb-6">Tem certeza que deseja apagar?</p>
             <div class="flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                <button onclick="window.closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
                 <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm">Sim, Apagar</button>
             </div>
         </div>
@@ -110,31 +111,31 @@
 
             <!-- Nav Desktop -->
             <nav class="hidden md:flex gap-1 bg-blue-800/50 p-1 rounded-lg">
-                <button onclick="changeView('dashboard')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="dashboard">Dashboard</button>
-                <button onclick="changeView('month')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="month">Ações do Mês</button>
-                <button onclick="changeView('calendar')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="calendar">Calendário Anual</button>
-                <button onclick="changeView('reports')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="reports">Relatórios & Metas</button>
-                <button onclick="changeView('crisis')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="crisis">Riscos & Crises</button>
+                <button onclick="window.changeView('dashboard')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="dashboard">Dashboard</button>
+                <button onclick="window.changeView('month')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="month">Ações do Mês</button>
+                <button onclick="window.changeView('calendar')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="calendar">Calendário Anual</button>
+                <button onclick="window.changeView('reports')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="reports">Relatórios & Metas</button>
+                <button onclick="window.changeView('crisis')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="crisis">Riscos & Crises</button>
             </nav>
 
-            <button class="md:hidden p-2 text-white hover:bg-blue-800 rounded" onclick="toggleMobileMenu()">
+            <button class="md:hidden p-2 text-white hover:bg-blue-800 rounded" onclick="window.toggleMobileMenu()">
                 <i data-lucide="menu"></i>
             </button>
         </div>
 
         <div id="mobile-menu" class="hidden md:hidden bg-blue-800 px-4 py-2 space-y-2 border-t border-blue-700">
-            <button onclick="changeView('dashboard'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Dashboard</button>
-            <button onclick="changeView('month'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Ações do Mês</button>
-            <button onclick="changeView('calendar'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Calendário Anual</button>
-            <button onclick="changeView('reports'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Relatórios & Metas</button>
-            <button onclick="changeView('crisis'); toggleMobileMenu()" class="block w-full text-left py-3 text-white font-medium">Riscos & Crises</button>
+            <button onclick="window.changeView('dashboard'); window.toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Dashboard</button>
+            <button onclick="window.changeView('month'); window.toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Ações do Mês</button>
+            <button onclick="window.changeView('calendar'); window.toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Calendário Anual</button>
+            <button onclick="window.changeView('reports'); window.toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Relatórios & Metas</button>
+            <button onclick="window.changeView('crisis'); window.toggleMobileMenu()" class="block w-full text-left py-3 text-white font-medium">Riscos & Crises</button>
         </div>
     </header>
 
     <!-- Main Content -->
     <main id="app-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div id="loading" class="text-center py-20 text-gray-500">
-            <p class="animate-pulse">Iniciando sistema...</p>
+            <p class="animate-pulse">Carregando interface...</p>
         </div>
     </main>
 
@@ -146,10 +147,10 @@
     
     <!-- Status Indicator -->
     <div id="connection-status" class="fixed bottom-2 right-2 text-[10px] text-gray-400 no-print opacity-50 hover:opacity-100 transition-opacity">
-        Conectando...
+        Inicializando...
     </div>
 
-    <!-- SCRIPT UNIFICADO E ROBUSTO -->
+    <!-- SCRIPT UNIFICADO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -197,36 +198,100 @@
 
         let db, auth;
 
-        // --- DEFINIÇÃO DE FUNÇÕES GLOBAIS (Antes da inicialização para evitar ReferenceError) ---
+        // --- 1. FUNÇÕES GLOBAIS (Expostas para o HTML) ---
+        // Estas funções são definidas AGORA para garantir que o onclick funcione
 
-        // Navegação
-        window.changeView = (viewName) => {
+        window.changeView = function(viewName) {
             window.state.view = viewName;
             renderApp();
         };
 
-        window.changeMonth = (monthId) => {
+        window.changeMonth = function(monthId) {
             window.state.selectedMonth = monthId;
             renderApp();
         };
 
-        window.toggleMobileMenu = () => {
-            document.getElementById('mobile-menu').classList.toggle('hidden');
+        window.toggleMobileMenu = function() {
+            const menu = document.getElementById('mobile-menu');
+            if(menu) menu.classList.toggle('hidden');
         };
 
-        window.handleSave = () => alert(`Dados salvos! (${window.state.mode === 'firebase' ? 'Nuvem' : 'Local'})`);
-        window.exportPDF = () => setTimeout(() => window.print(), 100);
-
-        // Modais
-        window.openConfirmModal = (msg, actionCallback) => {
-            document.getElementById('modal-message').innerText = msg;
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-            confirmBtn.onclick = () => { actionCallback(); window.closeModal(); };
-            document.getElementById('modal-overlay').classList.remove('hidden');
+        window.handleSave = function() { 
+            alert(`Dados salvos! (${window.state.mode === 'firebase' ? 'Nuvem' : 'Local'})`); 
         };
-        window.closeModal = () => document.getElementById('modal-overlay').classList.add('hidden');
+        
+        window.exportPDF = function() { 
+            setTimeout(() => window.print(), 100); 
+        };
 
-        // Helpers de DB (Unificados)
+        window.openConfirmModal = function(msg, actionCallback) {
+            const modal = document.getElementById('modal-overlay');
+            const msgEl = document.getElementById('modal-message');
+            const btn = document.getElementById('modal-confirm-btn');
+            if(modal && msgEl && btn) {
+                msgEl.innerText = msg;
+                btn.onclick = () => { actionCallback(); window.closeModal(); };
+                modal.classList.remove('hidden');
+            }
+        };
+
+        window.closeModal = function() {
+            const modal = document.getElementById('modal-overlay');
+            if(modal) modal.classList.add('hidden');
+        };
+
+        // --- 2. RENDERIZAÇÃO (Declarada antes do uso) ---
+        
+        function renderApp() {
+            const content = document.getElementById('app-content');
+            if(!content) return;
+
+            // Atualizar navegação
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.view === window.state.view) {
+                    btn.className = 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all';
+                } else {
+                    btn.className = 'nav-btn nav-btn-inactive px-4 py-2 rounded-md text-sm font-medium transition-all';
+                }
+            });
+
+            // Seletor de Mês
+            let monthSelectorHTML = '';
+            if (window.state.view === 'month' || window.state.view === 'reports') {
+                monthSelectorHTML = `
+                    <div class="mb-8 overflow-x-auto pb-4 no-print">
+                        <div class="flex gap-2 min-w-max px-1">
+                            ${MONTHS_DATA.map(m => `
+                                <button onclick="window.changeMonth(${m.id})" 
+                                    class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm
+                                    ${window.state.selectedMonth === m.id 
+                                        ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-offset-2 ring-blue-900' 
+                                        : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'}">
+                                    ${m.name}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            let viewHTML = '';
+            if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
+            else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
+            else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
+            else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
+            else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
+
+            content.innerHTML = monthSelectorHTML + viewHTML;
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+            attachInputListeners();
+        }
+        
+        // Expor renderApp globalmente
+        window.renderApp = renderApp;
+
+        // --- 3. LÓGICA DE DADOS (CRUD) ---
+
         function saveLocal() {
             if(window.state.mode === 'local') {
                 localStorage.setItem(DB_KEY, JSON.stringify({
@@ -240,7 +305,6 @@
             }
         }
 
-        // --- CRUD GLOBAL EXPOSTO ---
         // Atividades
         window.addActivity = async () => {
             const data = {
@@ -283,7 +347,7 @@
         // Notificações
         window.addNotification = async () => {
             const input = document.getElementById('new-notification');
-            if(input.value.trim()) {
+            if(input && input.value.trim()) {
                 const data = { text: input.value, timestamp: new Date().toISOString() };
                 if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), data);
                 else { data.id = Date.now().toString(); window.state.notifications.unshift(data); saveLocal(); }
@@ -299,7 +363,7 @@
         window.addHoliday = async () => {
             const dayInput = document.getElementById('holiday-day');
             const nameInput = document.getElementById('holiday-name');
-            if (dayInput.value && nameInput.value) {
+            if (dayInput && nameInput && dayInput.value && nameInput.value) {
                 const data = { month: window.state.selectedMonth, day: dayInput.value, name: nameInput.value };
                 if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), data);
                 else { data.id = Date.now().toString(); window.state.holidays.push(data); saveLocal(); }
@@ -344,8 +408,124 @@
             window.updateUnifiedReport(window.state.selectedMonth, 'highlights', text);
         };
 
-        // --- INICIALIZAÇÃO DO SISTEMA ---
-        async function initSystem() {
+        // --- 4. VIEWS HTML ---
+
+        function getDashboardHTML() {
+            const activities = window.state.activities;
+            const totalActs = activities.length;
+            const completedActs = activities.filter(a => a.status === 'Concluído');
+            const annualAchieved = completedActs.length;
+            const annualGoal = totalActs; 
+            const ratedEvents = completedActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
+            const totalSatisfaction = ratedEvents.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
+            const averageSatisfaction = ratedEvents.length > 0 ? Math.round(totalSatisfaction / ratedEvents.length) : 0;
+            const topEvents = activities.filter(a => a.status === 'Concluído' && a.satisfaction).sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction)).slice(0, 5);
+            const topEventsHTML = topEvents.map((evt, idx) => `<div class="flex items-center justify-between p-3 bg-white border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"><div class="flex items-center gap-3"><div class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 font-bold rounded-full text-xs">${idx + 1}º</div><div><p class="text-sm font-bold text-gray-800">${evt.eventName || 'Evento sem nome'}</p><p class="text-[10px] text-gray-500">${evt.type}</p></div></div><div class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-green-700 font-bold text-xs">${evt.satisfaction}% <i data-lucide="star" size="12"></i></div></div>`).join('') || '<p class="text-xs text-gray-400 italic text-center py-4">Nenhum evento avaliado.</p>';
+            const notificationsHTML = window.state.notifications.map(n => `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-2 rounded shadow-sm flex justify-between items-start"><div><p class="text-sm text-yellow-800 font-medium">${n.text}</p><p class="text-[10px] text-yellow-600 mt-1">${new Date(n.timestamp).toLocaleString()}</p></div><button onclick="window.deleteNotification('${n.id}')" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button></div>`).join('');
+
+            return `<div class="space-y-6 animate-fadeIn"><div class="flex justify-between items-center border-b pb-4"><h2 class="text-2xl font-bold text-gray-800">Dashboard Geral</h2><button onclick="window.exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm"><i data-lucide="printer"></i> Exportar PDF</button></div><div class="grid grid-cols-1 md:grid-cols-4 gap-4"><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-indigo-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Média Real (Anual)</p><h3 class="text-3xl font-bold text-indigo-700">${averageSatisfaction}%</h3></div><i data-lucide="star" class="text-indigo-500 h-8 w-8 opacity-80"></i></div><div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${averageSatisfaction}%"></div></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Meta Anual</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal}</h3></div><i data-lucide="target" class="text-blue-600 h-8 w-8 opacity-80"></i></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Atingidas</p><h3 class="text-3xl font-bold text-gray-800">${annualAchieved}</h3></div><i data-lucide="check-circle-2" class="text-green-500 h-8 w-8 opacity-80"></i></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Riscos</p><h3 class="text-3xl font-bold text-gray-800">${window.state.crises.length}</h3></div><i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i></div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução</h3><div class="h-48 flex items-end gap-2 justify-between px-2">${MONTHS_DATA.map(m => { const c = activities.filter(a => a.month === m.id).length; const h = c > 0 ? Math.min((c/15)*100,100) : 4; return `<div class="flex flex-col items-center flex-1 group relative"><span class="text-xs font-bold text-blue-600 mb-1 absolute bottom-full">${c}</span><div class="w-full rounded-t ${c>0?'bg-blue-500':'bg-gray-100'}" style="height:${h}%"></div><span class="text-xs text-gray-500 mt-2 truncate text-center">${m.name.substring(0,3)}</span></div>`}).join('')}</div></div><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Top Eventos</h3><div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">${topEventsHTML}</div></div><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-yellow-500"></i> Mural</h3><div class="flex gap-2 mb-4"><input type="text" id="new-notification" placeholder="Novo aviso..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"><button onclick="window.addNotification()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button></div><div class="overflow-y-auto flex-1 custom-scrollbar max-h-[200px]">${notificationsHTML}</div></div></div></div>`;
+        }
+
+        function getMonthViewHTML() {
+            const month = MONTHS_DATA[window.state.selectedMonth];
+            const monthHolidays = window.state.holidays.filter(h => h.month === window.state.selectedMonth);
+            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
+            return `
+                <div class="space-y-8 animate-fadeIn">
+                    <div class="bg-white p-6 rounded-lg shadow-sm ${month.color}"><div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-gray-800 uppercase">${month.name}</h2><div class="flex gap-2 no-print"><button onclick="window.handleSave()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"><i data-lucide="save" size="16"></i> Salvar</button><button onclick="window.exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"><i data-lucide="printer" size="16"></i> Exportar PDF</button></div></div><div class="mt-6 pt-4 border-t border-gray-100"><div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2"><h4 class="text-xs font-bold text-gray-500 uppercase">Datas Comemorativas</h4><div class="flex gap-2 no-print bg-gray-50 p-1 rounded items-center"><input type="text" id="holiday-day" placeholder="Dia" class="w-16 border border-gray-300 rounded px-2 py-1 text-xs"><input type="text" id="holiday-name" placeholder="Evento" class="w-32 border border-gray-300 rounded px-2 py-1 text-xs"><button onclick="window.addHoliday()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700">Adicionar</button></div></div><div class="flex flex-wrap gap-2">${monthHolidays.map(h => `<div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs rounded-full border border-blue-100"><span class="font-bold">${h.day}</span> - ${h.name}<button onclick="window.removeHoliday('${h.id}')" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button></div>`).join('')}</div></div></div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div class="flex justify-between items-center p-4 border-b bg-gray-50"><h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="file-text" class="text-blue-600"></i> Cronograma</h3><button onclick="window.addActivity()" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button></div><div class="overflow-x-auto custom-scrollbar"><table class="w-full text-sm text-left whitespace-nowrap"><thead class="bg-gray-100 text-gray-700 font-semibold uppercase text-xs"><tr><th class="px-4 py-3 min-w-[140px]">Tipo</th><th class="px-4 py-3 min-w-[200px]">Nome</th><th class="px-4 py-3 min-w-[120px]">Público</th><th class="px-4 py-3 min-w-[120px]">Data/Hora</th><th class="px-4 py-3 min-w-[120px]">Link</th><th class="px-4 py-3 min-w-[150px]">Ocorrência</th><th class="px-4 py-3 min-w-[150px]">Tomada</th><th class="px-4 py-3 min-w-[120px]">Satisfação</th><th class="px-4 py-3 min-w-[100px]">Status</th><th class="px-4 py-3 w-[50px] no-print">Ações</th></tr></thead><tbody class="divide-y divide-gray-100">${monthActs.map(act => { const satisfactionWidth = act.satisfaction ? Math.min(act.satisfaction, 100) : 0; return `<tr class="hover:bg-gray-50 align-top"><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'type', this.value)" class="w-full border rounded text-xs p-1.5 ${getTypeColor(act.type)}">${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><input type="text" value="${act.eventName || ''}" data-id="${act.id}" data-field="eventName" class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium"></td><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="date" value="${act.date || ''}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1"><input type="time" value="${act.time || ''}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1"></div></td><td class="px-4 py-3"><input type="text" value="${act.link || ''}" data-id="${act.id}" data-field="link" class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600"></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="text" value="${act.postName || ''}" data-id="${act.id}" data-field="postName" placeholder="Resp." class="act-input w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50"><textarea data-id="${act.id}" data-field="postOccurrence" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea></div></td><td class="px-4 py-3"><textarea data-id="${act.id}" data-field="postAction" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea></td><td class="px-4 py-3"><div class="flex items-center gap-1 mb-1"><input type="number" value="${act.satisfaction || ''}" data-id="${act.id}" data-field="satisfaction" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100"><span class="text-xs text-gray-500">%</span></div><div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${satisfactionWidth}%"></div></div></td><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td class="px-4 py-3 text-center no-print"><button onclick="window.requestDeleteActivity('${act.id}')" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button></td></tr>` }).join('')}</tbody></table></div></div>
+                </div>
+            `;
+        }
+
+        function getCalendarViewHTML() {
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                     <div class="flex justify-between items-center border-b pb-4"><h2 class="text-2xl font-bold text-gray-800">Calendário Anual Consolidado</h2><button onclick="window.exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm"><i data-lucide="printer"></i> Exportar</button></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${MONTHS_DATA.map(m => {
+                            const mActs = window.state.activities.filter(a => a.month === m.id);
+                            const total = mActs.length;
+                            const achieved = mActs.filter(a => a.status === 'Concluído').length;
+                            return `<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden print-break-inside-avoid flex flex-col h-auto min-h-[150px]"><div class="px-4 py-3 ${m.color} bg-gray-50 border-b border-gray-100 flex justify-between items-center"><h3 class="font-bold text-gray-800">${m.name}</h3><span class="text-xs font-bold bg-white px-2 py-1 rounded shadow-sm border text-gray-500">${total} Ações</span></div><div class="p-4 flex-1"><h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Eventos:</h4><ul class="space-y-1 mb-4">${mActs.length > 0 ? mActs.map(act => `<li class="text-xs text-gray-700 flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span><span title="${act.eventName || 'Sem nome'}">${act.eventName || 'Sem nome'}</span></li>`).join('') : '<li class="text-xs text-gray-300 italic">Nenhum evento</li>'}</ul></div><div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between text-xs mt-auto"><span class="text-green-600 font-bold">Concluídos: ${achieved}</span><span class="text-gray-500">Planejados: ${total}</span></div></div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCrisisViewHTML() {
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                    <div class="bg-red-50 p-6 rounded-lg border border-red-100 flex flex-col md:flex-row justify-between items-start gap-4"><div><h2 class="text-2xl font-bold text-red-800 mb-2 flex items-center gap-2"><i data-lucide="shield-alert"></i> Gestão de Riscos</h2><p class="text-red-700 text-sm max-w-2xl">Classificação de riscos e preenchimento manual.</p></div><div class="flex gap-2 no-print w-full md:w-auto"><button onclick="window.handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button><button onclick="window.exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i data-lucide="printer" size="16"></i> Exportar PDF</button></div></div>
+                    <button onclick="window.addCrisis()" class="w-full py-4 border-2 border-dashed border-red-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors font-bold uppercase tracking-wide no-print flex items-center justify-center gap-2"><i data-lucide="plus" size="20"></i> Registrar Novo Risco ou Ocorrência</button>
+                    <div class="grid gap-6">
+                        ${window.state.crises.map((item, index) => `<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative print-break-inside-avoid"><div class="absolute top-4 right-4 no-print"><button onclick="window.requestDeleteCrisis('${item.id}')" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button></div><h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#${index + 1}</span> Ocorrência de Setor</h3><div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-md border border-gray-100"><div><label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Origem</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Setor</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div></div><div class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" size="12"></i> Plano de Ação Corretiva</label><textarea data-cid="${item.id}" data-cfield="correctiveAction" class="crisis-input w-full border border-red-100 bg-white rounded p-3 text-sm focus:ring-red-500 min-h-[80px]" placeholder="Descreva ação tomada...">${item.correctiveAction}</textarea></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-gray-50 p-3 rounded border border-gray-100"><label class="block text-xs font-bold text-gray-600 mb-1">Impactos / Riscos</label><textarea data-cid="${item.id}" data-cfield="risks" class="crisis-input w-full bg-white border border-gray-200 rounded p-2 text-xs h-24 resize-none">${item.risks}</textarea></div><div class="bg-blue-50 p-3 rounded border border-blue-100"><label class="block text-xs font-bold text-blue-800 mb-1">Aprendizados</label><textarea data-cid="${item.id}" data-cfield="learning" class="crisis-input w-full bg-white border border-blue-200 rounded p-2 text-xs h-24 resize-none">${item.learning}</textarea></div><div class="bg-green-50 p-3 rounded border border-green-100"><label class="block text-xs font-bold text-green-800 mb-1">Melhoria Futura</label><textarea data-cid="${item.id}" data-cfield="improvement" class="crisis-input w-full bg-white border border-green-200 rounded p-2 text-xs h-24 resize-none">${item.improvement}</textarea></div></div></div>`).join('')}${window.state.crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getReportsViewHTML() {
+            const activities = window.state.activities;
+            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
+            const total = monthActs.length;
+            const completed = monthActs.filter(a => a.status === 'Concluído').length;
+            const missed = total - completed;
+            const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
+            const ratedMonthActs = monthActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
+            const totalMonthSat = ratedMonthActs.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
+            const avgMonthSat = ratedMonthActs.length > 0 ? Math.round(totalMonthSat / ratedMonthActs.length) : 0;
+            const report = window.state.monthlyReports[window.state.selectedMonth] || { explanation: '', highlights: '', suggestions: '' };
+
+            return `
+                <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold text-gray-800">Relatório de Desempenho e Metas</h2><p class="text-gray-500">Mês de Referência: <span class="font-bold text-blue-600">${MONTHS_DATA[window.state.selectedMonth].name}</span></p></div><div class="flex gap-2 no-print w-full md:w-auto flex-wrap"><button onclick="window.exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"><i data-lucide="file-check-2" size="16"></i> Exportar para Alta Gestão</button><button onclick="window.requestClearReport()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-200 rounded hover:bg-red-200"><i data-lucide="eraser" size="16"></i> Apagar</button><button onclick="window.handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button></div></div>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm"><h3 class="text-sm font-bold text-gray-500 uppercase mb-4 border-b pb-2">Metas Consolidadas do Mês</h3><div class="grid grid-cols-2 md:grid-cols-5 gap-4"><div class="p-4 bg-gray-50 rounded text-center"><div class="text-3xl font-bold text-gray-800">${total}</div><div class="text-xs font-bold text-gray-500 uppercase mt-1">Meta Mensal (Ações)</div></div><div class="p-4 bg-green-50 rounded text-center"><div class="text-3xl font-bold text-green-600">${completed}</div><div class="text-xs font-bold text-green-800 uppercase mt-1">Metas Atingidas</div></div><div class="p-4 bg-yellow-50 rounded text-center"><div class="text-3xl font-bold text-yellow-600">${missed}</div><div class="text-xs font-bold text-yellow-800 uppercase mt-1">Não Alcançadas</div></div><div class="p-4 bg-blue-50 rounded text-center"><div class="text-3xl font-bold text-blue-600">${internal}</div><div class="text-xs font-bold text-blue-800 uppercase mt-1">Eventos Internos</div></div><div class="p-4 bg-indigo-50 rounded text-center border border-indigo-100"><div class="text-3xl font-bold text-indigo-600">${avgMonthSat}%</div><div class="text-xs font-bold text-indigo-800 uppercase mt-1">Média Satisfação</div></div></div></div>
+                    <div class="space-y-6"><div class="bg-white p-6 rounded shadow-sm border border-gray-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-gray-800 text-lg">1. Análise Direta</h3><button onclick="window.generateAutoText()" class="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Análise</button></div><textarea id="report-explanation" oninput="window.updateUnifiedReport('${window.state.selectedMonth}', 'explanation', this.value)" class="w-full border border-gray-300 rounded p-4 h-48 focus:ring-blue-500 resize-none leading-relaxed text-sm text-gray-700" placeholder="Escreva a análise da alta gestão...">${report.explanation}</textarea></div><div class="bg-white p-6 rounded shadow-sm border border-gray-200"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-gray-800 text-lg">2. Pontos Altos</h3><button onclick="window.generateHighlights()" class="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Destaques</button></div><textarea id="report-highlights" oninput="window.updateUnifiedReport('${window.state.selectedMonth}', 'highlights', this.value)" class="w-full border border-gray-300 rounded p-4 h-32 focus:ring-green-500 resize-none text-sm" placeholder="Liste resultados...">${report.highlights}</textarea></div></div>
+                </div>
+            `;
+        }
+
+        function attachInputListeners() {
+            document.querySelectorAll('.act-input').forEach(input => {
+                input.addEventListener('change', (e) => { 
+                    window.updateUnifiedActivity(e.target.dataset.id, e.target.dataset.field, e.target.value);
+                });
+            });
+            document.querySelectorAll('.crisis-input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    window.updateUnifiedCrisis(e.target.dataset.cid, e.target.dataset.cfield, e.target.value);
+                });
+            });
+        }
+
+        // Helpers de Estilo
+        function getTypeColor(type) {
+            switch (type) {
+                case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
+                case 'Evento Interno': return 'bg-blue-100 text-blue-800 border-blue-200';
+                case 'Evento Externo': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                case 'Campanha': return 'bg-pink-100 text-pink-800 border-pink-200';
+                case 'Treinamento': return 'bg-orange-100 text-orange-800 border-orange-200';
+                case 'Gravação Externa': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+                default: return 'bg-white border-gray-300 text-gray-700';
+            }
+        }
+        function getStatusColor(status) {
+            if (status === 'Concluído') return { bg: '#dcfce7', text: '#166534' };
+            if (status === 'Planejado') return { bg: '#fef9c3', text: '#854d0e' };
+            return { bg: '#fee2e2', text: '#991b1b' };
+        }
+        function getRiskColorClass(level) {
+            if (level.includes('Grave') || level.includes('Extrema')) return 'text-red-600 border-red-200 bg-red-50';
+            if (level.includes('Moderada')) return 'text-orange-600 border-orange-200';
+            return 'text-gray-700 border-gray-300';
+        }
+
+        // --- 5. INITIALIZATION ---
+        // Setup inicial simples e robusto
+        function initSystem() {
             const hasConfig = Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey;
             
             if (hasConfig) {
@@ -355,9 +535,9 @@
                     db = getFirestore(app);
                     
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
+                        signInWithCustomToken(auth, __initial_auth_token);
                     } else {
-                        await signInAnonymously(auth);
+                        signInAnonymously(auth);
                     }
 
                     onAuthStateChanged(auth, (user) => {
@@ -365,16 +545,14 @@
                             window.state.mode = 'firebase';
                             updateStatus('Online (Compartilhado)');
                             setupRealtimeListeners();
-                            // Renderiza imediatamente após conectar
                             renderApp();
                         }
                     });
                 } catch (e) {
-                    console.error("Erro Firebase, fallback local:", e);
+                    console.error("Firebase error, local fallback", e);
                     enableLocalMode();
                 }
             } else {
-                console.log("Sem config Firebase, modo Local.");
                 enableLocalMode();
             }
         }
@@ -399,128 +577,7 @@
             if(el) el.innerText = text;
         }
 
-        // --- RENDERIZAÇÃO ---
-        window.renderApp = function() {
-            const content = document.getElementById('app-content');
-            if(!content) return;
-
-            // Atualizar navegação
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.dataset.view === window.state.view) {
-                    btn.className = 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all';
-                } else {
-                    btn.className = 'nav-btn nav-btn-inactive px-4 py-2 rounded-md text-sm font-medium transition-all';
-                }
-            });
-
-            // Seletor de Mês
-            let monthSelectorHTML = '';
-            if (window.state.view === 'month' || window.state.view === 'reports') {
-                monthSelectorHTML = `
-                    <div class="mb-8 overflow-x-auto pb-4 no-print">
-                        <div class="flex gap-2 min-w-max px-1">
-                            ${MONTHS_DATA.map(m => `
-                                <button onclick="changeMonth(${m.id})" 
-                                    class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm
-                                    ${window.state.selectedMonth === m.id 
-                                        ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-offset-2 ring-blue-900' 
-                                        : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'}">
-                                    ${m.name}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            let viewHTML = '';
-            if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
-            else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
-            else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
-            else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
-            else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
-
-            content.innerHTML = monthSelectorHTML + viewHTML;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-            attachInputListeners();
-        };
-
-        // --- HELPERS DE RENDERIZAÇÃO (Colocados no window ou escopo acessivel) ---
-        // (Reutilizando as funções de geração de HTML do código anterior, que agora rodam no escopo do modulo mas usam window.state)
-        
-        // ... (Mesmas funções getDashboardHTML, etc. do código anterior, garantido que usam window.state) ...
-        // Para economizar espaço visual aqui, as funções HTML são as mesmas da versão anterior, 
-        // mas IMPORTANTE: Elas devem estar DENTRO deste bloco <script> ou acessíveis. 
-        // Vou incluí-las abaixo para completude.
-
-        function getDashboardHTML() {
-            const activities = window.state.activities;
-            const totalActs = activities.length;
-            const completedActs = activities.filter(a => a.status === 'Concluído');
-            const annualAchieved = completedActs.length;
-            const annualGoal = totalActs; 
-            const ratedEvents = completedActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
-            const totalSatisfaction = ratedEvents.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
-            const averageSatisfaction = ratedEvents.length > 0 ? Math.round(totalSatisfaction / ratedEvents.length) : 0;
-            const topEvents = activities.filter(a => a.status === 'Concluído' && a.satisfaction).sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction)).slice(0, 5);
-            const topEventsHTML = topEvents.map((evt, idx) => `<div class="flex items-center justify-between p-3 bg-white border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"><div class="flex items-center gap-3"><div class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 font-bold rounded-full text-xs">${idx + 1}º</div><div><p class="text-sm font-bold text-gray-800">${evt.eventName || 'Evento sem nome'}</p><p class="text-[10px] text-gray-500">${evt.type}</p></div></div><div class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-green-700 font-bold text-xs">${evt.satisfaction}% <i data-lucide="star" size="12"></i></div></div>`).join('') || '<p class="text-xs text-gray-400 italic text-center py-4">Nenhum evento avaliado.</p>';
-            const notificationsHTML = window.state.notifications.map(n => `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-2 rounded shadow-sm flex justify-between items-start"><div><p class="text-sm text-yellow-800 font-medium">${n.text}</p><p class="text-[10px] text-yellow-600 mt-1">${new Date(n.timestamp).toLocaleString()}</p></div><button onclick="deleteNotification('${n.id}')" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button></div>`).join('');
-
-            return `<div class="space-y-6 animate-fadeIn"><div class="flex justify-between items-center border-b pb-4"><h2 class="text-2xl font-bold text-gray-800">Dashboard Geral</h2><button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm"><i data-lucide="printer"></i> Exportar PDF</button></div><div class="grid grid-cols-1 md:grid-cols-4 gap-4"><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-indigo-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Média Real (Anual)</p><h3 class="text-3xl font-bold text-indigo-700">${averageSatisfaction}%</h3></div><i data-lucide="star" class="text-indigo-500 h-8 w-8 opacity-80"></i></div><div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${averageSatisfaction}%"></div></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Meta Anual</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal}</h3></div><i data-lucide="target" class="text-blue-600 h-8 w-8 opacity-80"></i></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Atingidas</p><h3 class="text-3xl font-bold text-gray-800">${annualAchieved}</h3></div><i data-lucide="check-circle-2" class="text-green-500 h-8 w-8 opacity-80"></i></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Riscos</p><h3 class="text-3xl font-bold text-gray-800">${window.state.crises.length}</h3></div><i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i></div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução</h3><div class="h-48 flex items-end gap-2 justify-between px-2">${MONTHS_DATA.map(m => { const c = activities.filter(a => a.month === m.id).length; const h = c > 0 ? Math.min((c/15)*100,100) : 4; return `<div class="flex flex-col items-center flex-1 group relative"><span class="text-xs font-bold text-blue-600 mb-1 absolute bottom-full">${c}</span><div class="w-full rounded-t ${c>0?'bg-blue-500':'bg-gray-100'}" style="height:${h}%"></div><span class="text-xs text-gray-500 mt-2 truncate text-center">${m.name.substring(0,3)}</span></div>`}).join('')}</div></div><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Top Eventos</h3><div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">${topEventsHTML}</div></div><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-yellow-500"></i> Mural</h3><div class="flex gap-2 mb-4"><input type="text" id="new-notification" placeholder="Novo aviso..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"><button onclick="addNotification()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button></div><div class="overflow-y-auto flex-1 custom-scrollbar max-h-[200px]">${notificationsHTML}</div></div></div></div>`;
-        }
-
-        function getMonthViewHTML() {
-            const month = MONTHS_DATA[window.state.selectedMonth];
-            const monthHolidays = window.state.holidays.filter(h => h.month === window.state.selectedMonth);
-            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
-            // ... (Código do MonthView mantido mas compactado para resposta, use a lógica do anterior) ...
-            // Reutilizando lógica do passo anterior
-            return `
-                <div class="space-y-8 animate-fadeIn">
-                    <div class="bg-white p-6 rounded-lg shadow-sm ${month.color}"><div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-gray-800 uppercase">${month.name}</h2><div class="flex gap-2 no-print"><button onclick="handleSave()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"><i data-lucide="save" size="16"></i> Salvar</button><button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"><i data-lucide="printer" size="16"></i> Exportar PDF</button></div></div><div class="mt-6 pt-4 border-t border-gray-100"><div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2"><h4 class="text-xs font-bold text-gray-500 uppercase">Datas Comemorativas</h4><div class="flex gap-2 no-print bg-gray-50 p-1 rounded items-center"><input type="text" id="holiday-day" placeholder="Dia" class="w-16 border border-gray-300 rounded px-2 py-1 text-xs"><input type="text" id="holiday-name" placeholder="Evento" class="w-32 border border-gray-300 rounded px-2 py-1 text-xs"><button onclick="addHoliday()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700">Adicionar</button></div></div><div class="flex flex-wrap gap-2">${monthHolidays.map(h => `<div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs rounded-full border border-blue-100"><span class="font-bold">${h.day}</span> - ${h.name}<button onclick="removeHoliday('${h.id}')" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button></div>`).join('')}</div></div></div>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div class="flex justify-between items-center p-4 border-b bg-gray-50"><h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="file-text" class="text-blue-600"></i> Cronograma</h3><button onclick="addActivity()" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button></div><div class="overflow-x-auto custom-scrollbar"><table class="w-full text-sm text-left whitespace-nowrap"><thead class="bg-gray-100 text-gray-700 font-semibold uppercase text-xs"><tr><th class="px-4 py-3 min-w-[140px]">Tipo</th><th class="px-4 py-3 min-w-[200px]">Nome</th><th class="px-4 py-3 min-w-[120px]">Público</th><th class="px-4 py-3 min-w-[120px]">Data/Hora</th><th class="px-4 py-3 min-w-[120px]">Link</th><th class="px-4 py-3 min-w-[150px]">Ocorrência</th><th class="px-4 py-3 min-w-[150px]">Tomada</th><th class="px-4 py-3 min-w-[120px]">Satisfação</th><th class="px-4 py-3 min-w-[100px]">Status</th><th class="px-4 py-3 w-[50px] no-print">Ações</th></tr></thead><tbody class="divide-y divide-gray-100">${monthActs.map(act => { const satisfactionWidth = act.satisfaction ? Math.min(act.satisfaction, 100) : 0; return `<tr class="hover:bg-gray-50 align-top"><td class="px-4 py-3"><select onchange="updateUnifiedActivity('${act.id}', 'type', this.value)" class="w-full border rounded text-xs p-1.5 ${getTypeColor(act.type)}">${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><input type="text" value="${act.eventName || ''}" data-id="${act.id}" data-field="eventName" class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium"></td><td class="px-4 py-3"><select onchange="updateUnifiedActivity('${act.id}', 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="date" value="${act.date || ''}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1"><input type="time" value="${act.time || ''}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1"></div></td><td class="px-4 py-3"><input type="text" value="${act.link || ''}" data-id="${act.id}" data-field="link" class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600"></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="text" value="${act.postName || ''}" data-id="${act.id}" data-field="postName" placeholder="Resp." class="act-input w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50"><textarea data-id="${act.id}" data-field="postOccurrence" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea></div></td><td class="px-4 py-3"><textarea data-id="${act.id}" data-field="postAction" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea></td><td class="px-4 py-3"><div class="flex items-center gap-1 mb-1"><input type="number" value="${act.satisfaction || ''}" data-id="${act.id}" data-field="satisfaction" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100"><span class="text-xs text-gray-500">%</span></div><div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${satisfactionWidth}%"></div></div></td><td class="px-4 py-3"><select onchange="updateUnifiedActivity('${act.id}', 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td class="px-4 py-3 text-center no-print"><button onclick="requestDeleteActivity('${act.id}')" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button></td></tr>` }).join('')}</tbody></table></div></div>
-                </div>
-            `;
-        }
-
-        // --- Helpers Reutilizados (Funções de estilo) ---
-        function getTypeColor(type) {
-            switch (type) {
-                case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
-                case 'Evento Interno': return 'bg-blue-100 text-blue-800 border-blue-200';
-                case 'Evento Externo': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-                case 'Campanha': return 'bg-pink-100 text-pink-800 border-pink-200';
-                case 'Treinamento': return 'bg-orange-100 text-orange-800 border-orange-200';
-                case 'Gravação Externa': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-                default: return 'bg-white border-gray-300 text-gray-700';
-            }
-        }
-        function getStatusColor(status) {
-            if (status === 'Concluído') return { bg: '#dcfce7', text: '#166534' };
-            if (status === 'Planejado') return { bg: '#fef9c3', text: '#854d0e' };
-            return { bg: '#fee2e2', text: '#991b1b' };
-        }
-        function getRiskColorClass(level) {
-            if (level.includes('Grave') || level.includes('Extrema')) return 'text-red-600 border-red-200 bg-red-50';
-            if (level.includes('Moderada')) return 'text-orange-600 border-orange-200';
-            return 'text-gray-700 border-gray-300';
-        }
-
-        // Listeners para UI events
-        function attachInputListeners() {
-            document.querySelectorAll('.act-input').forEach(input => {
-                input.addEventListener('change', (e) => { 
-                    window.updateUnifiedActivity(e.target.dataset.id, e.target.dataset.field, e.target.value);
-                });
-            });
-            document.querySelectorAll('.crisis-input').forEach(input => {
-                input.addEventListener('change', (e) => {
-                    window.updateUnifiedCrisis(e.target.dataset.cid, e.target.dataset.cfield, e.target.value);
-                });
-            });
-        }
-
-        // --- Configuração dos Listeners em Tempo Real (Se conectado) ---
+        // Listeners Realtime
         function setupRealtimeListeners() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), (snap) => {
                 window.state.activities = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -547,7 +604,7 @@
             });
         }
 
-        // Inicialização Final
+        // Trigger init
         document.addEventListener('DOMContentLoaded', () => {
             const d = document.getElementById('print-date');
             if(d) d.innerText = new Date().toLocaleDateString();
@@ -556,4 +613,4 @@
 
     </script>
 </body>
-</html>    
+</html>
