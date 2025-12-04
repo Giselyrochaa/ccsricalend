@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -55,7 +55,6 @@
                 padding: 0 !important;
                 resize: none; 
             }
-            /* Cores Forçadas */
             .bg-blue-100 { background-color: #dbeafe !important; }
             .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
             .bg-green-100 { background-color: #dcfce7 !important; }
@@ -156,7 +155,7 @@
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- CONSTANTES ---
+        // --- CONSTANTES E ESTADO GLOBAL ---
         const MONTHS_DATA = [
             { id: 0, name: 'Janeiro', color: 'border-l-4 border-gray-200' },
             { id: 1, name: 'Fevereiro', color: 'border-l-4 border-purple-400' },
@@ -179,7 +178,7 @@
         const ORIGIN_OPTIONS = ['Interno', 'Externo', 'Misto'];
         const RESPONSIBLE_OPTIONS = ['Vera Nascimento', 'Gisely Rocha'];
 
-        // --- CONFIGURAÇÃO E ESTADO ---
+        // Configuração
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
         const DB_KEY = 'evereste_comunicacao_local_v2'; 
@@ -198,217 +197,8 @@
 
         let db, auth;
 
-        // --- 1. FUNÇÕES GLOBAIS (Expostas para o HTML) ---
-        // Estas funções são definidas AGORA para garantir que o onclick funcione
-
-        window.changeView = function(viewName) {
-            window.state.view = viewName;
-            renderApp();
-        };
-
-        window.changeMonth = function(monthId) {
-            window.state.selectedMonth = monthId;
-            renderApp();
-        };
-
-        window.toggleMobileMenu = function() {
-            const menu = document.getElementById('mobile-menu');
-            if(menu) menu.classList.toggle('hidden');
-        };
-
-        window.handleSave = function() { 
-            alert(`Dados salvos! (${window.state.mode === 'firebase' ? 'Nuvem' : 'Local'})`); 
-        };
-        
-        window.exportPDF = function() { 
-            setTimeout(() => window.print(), 100); 
-        };
-
-        window.openConfirmModal = function(msg, actionCallback) {
-            const modal = document.getElementById('modal-overlay');
-            const msgEl = document.getElementById('modal-message');
-            const btn = document.getElementById('modal-confirm-btn');
-            if(modal && msgEl && btn) {
-                msgEl.innerText = msg;
-                btn.onclick = () => { actionCallback(); window.closeModal(); };
-                modal.classList.remove('hidden');
-            }
-        };
-
-        window.closeModal = function() {
-            const modal = document.getElementById('modal-overlay');
-            if(modal) modal.classList.add('hidden');
-        };
-
-        // --- 2. RENDERIZAÇÃO (Declarada antes do uso) ---
-        
-        function renderApp() {
-            const content = document.getElementById('app-content');
-            if(!content) return;
-
-            // Atualizar navegação
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.dataset.view === window.state.view) {
-                    btn.className = 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all';
-                } else {
-                    btn.className = 'nav-btn nav-btn-inactive px-4 py-2 rounded-md text-sm font-medium transition-all';
-                }
-            });
-
-            // Seletor de Mês
-            let monthSelectorHTML = '';
-            if (window.state.view === 'month' || window.state.view === 'reports') {
-                monthSelectorHTML = `
-                    <div class="mb-8 overflow-x-auto pb-4 no-print">
-                        <div class="flex gap-2 min-w-max px-1">
-                            ${MONTHS_DATA.map(m => `
-                                <button onclick="window.changeMonth(${m.id})" 
-                                    class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm
-                                    ${window.state.selectedMonth === m.id 
-                                        ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-offset-2 ring-blue-900' 
-                                        : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'}">
-                                    ${m.name}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            let viewHTML = '';
-            if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
-            else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
-            else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
-            else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
-            else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
-
-            content.innerHTML = monthSelectorHTML + viewHTML;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-            attachInputListeners();
-        }
-        
-        // Expor renderApp globalmente
-        window.renderApp = renderApp;
-
-        // --- 3. LÓGICA DE DADOS (CRUD) ---
-
-        function saveLocal() {
-            if(window.state.mode === 'local') {
-                localStorage.setItem(DB_KEY, JSON.stringify({
-                    activities: window.state.activities,
-                    crises: window.state.crises,
-                    notifications: window.state.notifications,
-                    monthlyReports: window.state.monthlyReports,
-                    holidays: window.state.holidays
-                }));
-                renderApp();
-            }
-        }
-
-        // Atividades
-        window.addActivity = async () => {
-            const data = {
-                month: window.state.selectedMonth,
-                type: 'Evento Interno', eventName: '', audience: 'Interno', link: '',
-                date: '', time: '', postName: '', postOccurrence: '', postAction: '',
-                satisfaction: '', status: 'Planejado'
-            };
-            if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), data);
-            else { data.id = Date.now().toString(); window.state.activities.push(data); saveLocal(); }
-        };
-        window.updateUnifiedActivity = async (id, field, value) => {
-            if (window.state.mode === 'firebase') await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [field]: value });
-            else { const item = window.state.activities.find(x => x.id === id); if(item) { item[field] = value; saveLocal(); } }
-        };
-        window.requestDeleteActivity = (id) => window.openConfirmModal("Excluir ação?", async () => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id));
-            else { window.state.activities = window.state.activities.filter(x => x.id !== id); saveLocal(); }
-        });
-
-        // Crises
-        window.addCrisis = async () => {
-            const data = {
-                date: new Date().toISOString().split('T')[0],
-                riskLevel: 'Sem relevância crítica', origin: 'Interno', sector: 'Comunicação', responsible: 'Vera Nascimento',
-                correctiveAction: '', risks: '', learning: '', improvement: ''
-            };
-            if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), data);
-            else { data.id = Date.now().toString(); window.state.crises.push(data); saveLocal(); }
-        };
-        window.updateUnifiedCrisis = async (id, field, value) => {
-            if (window.state.mode === 'firebase') await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [field]: value });
-            else { const item = window.state.crises.find(x => x.id === id); if(item) { item[field] = value; saveLocal(); } }
-        };
-        window.requestDeleteCrisis = (id) => window.openConfirmModal("Excluir registro?", async () => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id));
-            else { window.state.crises = window.state.crises.filter(x => x.id !== id); saveLocal(); }
-        });
-
-        // Notificações
-        window.addNotification = async () => {
-            const input = document.getElementById('new-notification');
-            if(input && input.value.trim()) {
-                const data = { text: input.value, timestamp: new Date().toISOString() };
-                if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), data);
-                else { data.id = Date.now().toString(); window.state.notifications.unshift(data); saveLocal(); }
-                input.value = '';
-            }
-        };
-        window.deleteNotification = async (id) => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
-            else { window.state.notifications = window.state.notifications.filter(x => x.id !== id); saveLocal(); }
-        };
-
-        // Feriados
-        window.addHoliday = async () => {
-            const dayInput = document.getElementById('holiday-day');
-            const nameInput = document.getElementById('holiday-name');
-            if (dayInput && nameInput && dayInput.value && nameInput.value) {
-                const data = { month: window.state.selectedMonth, day: dayInput.value, name: nameInput.value };
-                if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), data);
-                else { data.id = Date.now().toString(); window.state.holidays.push(data); saveLocal(); }
-            }
-        };
-        window.removeHoliday = (id) => window.openConfirmModal("Apagar data?", async () => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
-            else { window.state.holidays = window.state.holidays.filter(x => x.id !== id); saveLocal(); }
-        });
-
-        // Relatórios
-        window.updateUnifiedReport = async (monthId, field, value) => {
-            if (window.state.mode === 'firebase') await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString()), { [field]: value }, { merge: true });
-            else {
-                if(!window.state.monthlyReports[monthId]) window.state.monthlyReports[monthId] = {};
-                window.state.monthlyReports[monthId][field] = value;
-                saveLocal();
-            }
-        };
-        window.requestClearReport = () => window.openConfirmModal("Limpar relatório?", async () => {
-            if (window.state.mode === 'firebase') await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', window.state.selectedMonth.toString()), { explanation: '', highlights: '', suggestions: '' });
-            else {
-                if(window.state.monthlyReports[window.state.selectedMonth]) window.state.monthlyReports[window.state.selectedMonth] = { explanation: '', highlights: '', suggestions: '' };
-                saveLocal();
-            }
-        });
-
-        // Geradores de Texto
-        window.generateAutoText = () => {
-            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
-            const total = monthActs.length;
-            const completed = monthActs.filter(a => a.status === 'Concluído').length;
-            const efficiency = total > 0 ? Math.round((completed/total)*100) : 0;
-            const text = `ANÁLISE DE ENTREGAS - ${MONTHS_DATA[window.state.selectedMonth].name.toUpperCase()}\n\nO mês encerrou com ${total} ações planejadas e ${completed} metas atingidas. Eficiência: ${efficiency}%.`;
-            window.updateUnifiedReport(window.state.selectedMonth, 'explanation', text);
-        };
-        window.generateHighlights = () => {
-            const completedActs = window.state.activities.filter(a => a.month === window.state.selectedMonth && a.status === 'Concluído');
-            let text = "RESULTADOS CONSOLIDADOS:\n\n";
-            if (completedActs.length === 0) text += "- Nenhuma atividade concluída.";
-            else completedActs.forEach(act => text += `• ${act.type}: "${act.eventName || 'Evento'}" - Satisfação: ${act.satisfaction || '0'}%\n`);
-            window.updateUnifiedReport(window.state.selectedMonth, 'highlights', text);
-        };
-
-        // --- 4. VIEWS HTML ---
+        // --- 1. FUNÇÕES DE RENDERIZAÇÃO (DEFINIDAS PRIMEIRO) ---
+        // Essencial: Definir estas funções antes de chamá-las nos listeners ou initSystem
 
         function getDashboardHTML() {
             const activities = window.state.activities;
@@ -487,20 +277,23 @@
             `;
         }
 
-        function attachInputListeners() {
-            document.querySelectorAll('.act-input').forEach(input => {
-                input.addEventListener('change', (e) => { 
-                    window.updateUnifiedActivity(e.target.dataset.id, e.target.dataset.field, e.target.value);
-                });
-            });
-            document.querySelectorAll('.crisis-input').forEach(input => {
-                input.addEventListener('change', (e) => {
-                    window.updateUnifiedCrisis(e.target.dataset.cid, e.target.dataset.cfield, e.target.value);
-                });
-            });
+        window.renderApp = renderApp;
+
+        // --- 5. LÓGICA DE DADOS ---
+        function saveLocal() {
+            if(window.state.mode === 'local') {
+                localStorage.setItem(DB_KEY, JSON.stringify({
+                    activities: window.state.activities,
+                    crises: window.state.crises,
+                    notifications: window.state.notifications,
+                    monthlyReports: window.state.monthlyReports,
+                    holidays: window.state.holidays
+                }));
+                renderApp();
+            }
         }
 
-        // Helpers de Estilo
+        // Helpers de cor
         function getTypeColor(type) {
             switch (type) {
                 case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -523,33 +316,36 @@
             return 'text-gray-700 border-gray-300';
         }
 
-        // --- 5. INITIALIZATION ---
-        // Setup inicial simples e robusto
-        function initSystem() {
+        // Listeners
+        function attachInputListeners() {
+            document.querySelectorAll('.act-input').forEach(input => {
+                input.addEventListener('change', (e) => window.updateUnifiedActivity(e.target.dataset.id, e.target.dataset.field, e.target.value));
+            });
+            document.querySelectorAll('.crisis-input').forEach(input => {
+                input.addEventListener('change', (e) => window.updateUnifiedCrisis(e.target.dataset.cid, e.target.dataset.cfield, e.target.value));
+            });
+        }
+
+        // --- 6. INICIALIZAÇÃO E FIREBASE ---
+        async function initSystem() {
             const hasConfig = Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey;
-            
             if (hasConfig) {
                 try {
                     const app = initializeApp(firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
-                    
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        signInAnonymously(auth);
-                    }
-
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                    else await signInAnonymously(auth);
                     onAuthStateChanged(auth, (user) => {
                         if (user) {
                             window.state.mode = 'firebase';
-                            updateStatus('Online (Compartilhado)');
+                            updateStatus('Online');
                             setupRealtimeListeners();
                             renderApp();
                         }
                     });
                 } catch (e) {
-                    console.error("Firebase error, local fallback", e);
+                    console.error("Erro Firebase, usando local:", e);
                     enableLocalMode();
                 }
             } else {
@@ -559,7 +355,7 @@
 
         function enableLocalMode() {
             window.state.mode = 'local';
-            updateStatus('Offline (Modo Local)');
+            updateStatus('Modo Local');
             const localData = localStorage.getItem(DB_KEY);
             if (localData) {
                 const parsed = JSON.parse(localData);
@@ -577,34 +373,15 @@
             if(el) el.innerText = text;
         }
 
-        // Listeners Realtime
         function setupRealtimeListeners() {
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), (snap) => {
-                window.state.activities = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderApp();
-            });
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), (snap) => {
-                window.state.crises = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderApp();
-            });
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), (snap) => {
-                window.state.notifications = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-                renderApp();
-            });
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), (snap) => {
-                const h = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                if(h.length > 0) window.state.holidays = h;
-                renderApp();
-            });
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), (snap) => {
-                const r = {};
-                snap.docs.forEach(d => r[d.id] = d.data());
-                window.state.monthlyReports = r;
-                renderApp();
-            });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), (s) => { window.state.activities = s.docs.map(d => ({ id: d.id, ...d.data() })); renderApp(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), (s) => { window.state.crises = s.docs.map(d => ({ id: d.id, ...d.data() })); renderApp(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), (s) => { window.state.notifications = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); renderApp(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), (s) => { const h = s.docs.map(d => ({ id: d.id, ...d.data() })); if(h.length) window.state.holidays = h; renderApp(); });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), (s) => { const r = {}; s.docs.forEach(d => r[d.id] = d.data()); window.state.monthlyReports = r; renderApp(); });
         }
 
-        // Trigger init
+        // Start
         document.addEventListener('DOMContentLoaded', () => {
             const d = document.getElementById('print-date');
             if(d) d.innerText = new Date().toLocaleDateString();
@@ -614,3 +391,4 @@
     </script>
 </body>
 </html>
+                
