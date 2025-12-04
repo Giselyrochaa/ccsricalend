@@ -11,211 +11,29 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        // Configuração do Firebase
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
-        
-        // Verificação de segurança da configuração
-        if (Object.keys(firebaseConfig).length === 0) {
-            const loadingEl = document.getElementById('loading');
-            if(loadingEl) loadingEl.innerHTML = '<p class="text-red-600 font-bold">Erro de Configuração: Firebase não detectado.</p><p class="text-sm text-gray-500">Se você baixou este arquivo, precisa configurar as chaves do Firebase manualmente no código.</p>';
-            console.error("Firebase config is empty.");
-        }
-
-        // Inicialização
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Estado Global Reativo
-        window.state = {
-            view: 'dashboard',
-            selectedMonth: 0,
-            mobileMenuOpen: false,
-            user: null,
-            activities: [],
-            crises: [],
-            notifications: [],
-            monthlyReports: {},
-            holidays: [] 
-        };
-
-        // --- Autenticação e Listeners em Tempo Real ---
-        
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Erro na autenticação:", error);
-                document.getElementById('loading').innerHTML = `<p class="text-red-500">Erro de conexão: ${error.message}</p>`;
-            }
-        }
-
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.state.user = user;
-                // CORREÇÃO CRÍTICA: Força a renderização imediata para sair da tela de "Carregando"
-                renderApp(); 
-                setupRealtimeListeners();
-            }
-        });
-
-        function setupRealtimeListeners() {
-            // Listener: Atividades
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), (snapshot) => {
-                window.state.activities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderApp();
-            }, (error) => console.error("Erro atividades:", error));
-
-            // Listener: Crises
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), (snapshot) => {
-                window.state.crises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderApp();
-            }, (error) => console.error("Erro crises:", error));
-
-            // Listener: Notificações
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), (snapshot) => {
-                window.state.notifications = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                renderApp();
-            }, (error) => console.error("Erro notificacoes:", error));
-
-            // Listener: Relatórios
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), (snapshot) => {
-                const reportsObj = {};
-                snapshot.docs.forEach(doc => {
-                    reportsObj[doc.id] = doc.data();
-                });
-                window.state.monthlyReports = reportsObj;
-                renderApp();
-            }, (error) => console.error("Erro relatorios:", error));
-
-             // Listener: Feriados
-             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), (snapshot) => {
-                window.state.holidays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Seed inicial removido para evitar loop de escritas, renderiza vazio se não houver
-                renderApp();
-            }, (error) => console.error("Erro feriados:", error));
-        }
-
-        // --- Funções de Banco de Dados (CRUD) ---
-
-        // Atividades
-        window.dbAddActivity = async (activity) => {
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), activity);
-        };
-        window.dbUpdateActivity = async (id, field, value) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activities', id);
-            await updateDoc(docRef, { [field]: value });
-        };
-        window.dbDeleteActivity = async (id) => {
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id));
-        };
-
-        // Crises
-        window.dbAddCrisis = async (crisis) => {
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), crisis);
-        };
-        window.dbUpdateCrisis = async (id, field, value) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'crises', id);
-            await updateDoc(docRef, { [field]: value });
-        };
-        window.dbDeleteCrisis = async (id) => {
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id));
-        };
-
-        // Notificações
-        window.dbAddNotification = async (text) => {
-            const notif = {
-                text,
-                timestamp: new Date().toISOString(),
-                authorId: auth.currentUser.uid
-            };
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), notif);
-        };
-        window.dbDeleteNotification = async (id) => {
-             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
-        };
-
-        // Relatórios
-        window.dbUpdateReport = async (monthId, field, value) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString());
-            await setDoc(docRef, { [field]: value }, { merge: true });
-        };
-        window.dbClearReport = async (monthId) => {
-             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString());
-             await setDoc(docRef, { explanation: '', highlights: '', suggestions: '' });
-        };
-
-        // Feriados
-        window.dbAddHoliday = async (holiday) => {
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), holiday);
-        };
-        window.dbDeleteHoliday = async (id) => {
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
-        };
-
-    </script>
-
     <!-- Fontes e Estilos Globais -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* slate-50 */
-            color: #0f172a; /* slate-900 */
+            background-color: #f8fafc;
+            color: #0f172a;
         }
 
-        .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out;
-        }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        /* Estilos de Impressão */
         @media print {
-            @page { 
-                margin: 0.5cm; 
-                size: portrait; 
-            }
-            body { 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                background-color: white;
-                font-size: 11px; 
-            }
-            #app-content {
-                width: 100% !important;
-                max-width: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
+            @page { margin: 0.5cm; size: portrait; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white; font-size: 11px; }
+            #app-content { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; }
             .no-print { display: none !important; }
             .print-break-inside-avoid { break-inside: avoid; }
             table { font-size: 10px; width: 100%; }
             th, td { padding: 4px !important; }
-            input, select, textarea {
-                border: none !important;
-                background: transparent !important;
-                padding: 0 !important;
-                resize: none; 
-            }
+            input, select, textarea { border: none !important; background: transparent !important; padding: 0 !important; resize: none; }
             .bg-blue-100 { background-color: #dbeafe !important; }
             .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
             .bg-green-100 { background-color: #dcfce7 !important; }
@@ -225,7 +43,6 @@
         }
 
         #modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
-        
         .custom-scrollbar::-webkit-scrollbar { height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
 
@@ -236,13 +53,10 @@
             font-weight: 700;
         }
         .nav-btn-inactive { color: #dbeafe !important; }
-        .nav-btn-inactive:hover {
-            background-color: #1d4ed8 !important;
-            color: #ffffff !important;
-        }
+        .nav-btn-inactive:hover { background-color: #1d4ed8 !important; color: #ffffff !important; }
     </style>
 </head>
-<body class="pb-12">
+<body class="pb-12 flex flex-col min-h-screen">
 
     <!-- Modal de Confirmação -->
     <div id="modal-overlay" class="fixed inset-0 flex items-center justify-center z-50 hidden no-print">
@@ -252,7 +66,7 @@
             </h3>
             <p id="modal-message" class="text-gray-600 mb-6">Tem certeza que deseja apagar?</p>
             <div class="flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                <button id="btn-cancel-modal" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
                 <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm">Sim, Apagar</button>
             </div>
         </div>
@@ -270,32 +84,26 @@
             </div>
 
             <!-- Nav Desktop -->
-            <nav class="hidden md:flex gap-1 bg-blue-800/50 p-1 rounded-lg">
-                <button onclick="changeView('dashboard')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="dashboard">Dashboard</button>
-                <button onclick="changeView('month')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="month">Ações do Mês</button>
-                <button onclick="changeView('calendar')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="calendar">Calendário Anual</button>
-                <button onclick="changeView('reports')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="reports">Relatórios & Metas</button>
-                <button onclick="changeView('crisis')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="crisis">Riscos & Crises</button>
+            <nav class="hidden md:flex gap-1 bg-blue-800/50 p-1 rounded-lg" id="desktop-nav">
+                <!-- Botões injetados via JS -->
             </nav>
 
-            <button class="md:hidden p-2 text-white hover:bg-blue-800 rounded" onclick="toggleMobileMenu()">
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-white hover:bg-blue-800 rounded">
                 <i data-lucide="menu"></i>
             </button>
         </div>
 
         <div id="mobile-menu" class="hidden md:hidden bg-blue-800 px-4 py-2 space-y-2 border-t border-blue-700">
-            <button onclick="changeView('dashboard'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Dashboard</button>
-            <button onclick="changeView('month'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Ações do Mês</button>
-            <button onclick="changeView('calendar'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Calendário Anual</button>
-            <button onclick="changeView('reports'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Relatórios & Metas</button>
-            <button onclick="changeView('crisis'); toggleMobileMenu()" class="block w-full text-left py-3 text-white font-medium">Riscos & Crises</button>
+            <!-- Botões mobile injetados via JS -->
         </div>
     </header>
 
     <!-- Main Content -->
-    <main id="app-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="loading" class="text-center py-20 text-gray-500">
-            <p class="animate-pulse">Carregando dados em tempo real...</p>
+    <main id="app-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+        <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-500">
+            <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+            <p class="animate-pulse">Conectando ao sistema...</p>
+            <p class="text-xs mt-2 text-gray-400" id="loading-status">Aguardando autenticação...</p>
         </div>
     </main>
 
@@ -305,9 +113,39 @@
         <p>Documento gerado em <span id="print-date"></span></p>
     </footer>
 
-    <!-- Lógica da Aplicação -->
-    <script>
-        // --- Constantes ---
+    <!-- SCRIPT ÚNICO E INTEGRADO -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        // --- Configuração ---
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+
+        if (Object.keys(firebaseConfig).length === 0) {
+            document.getElementById('loading').innerHTML = '<p class="text-red-600 font-bold">Erro: Configuração do Firebase não encontrada.</p>';
+            throw new Error("Firebase config missing");
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Estado Global ---
+        const state = {
+            view: 'dashboard',
+            selectedMonth: 0,
+            mobileMenuOpen: false,
+            user: null,
+            activities: [],
+            crises: [],
+            notifications: [],
+            monthlyReports: {},
+            holidays: []
+        };
+
+        // --- Constantes de Dados ---
         const MONTHS_DATA = [
             { id: 0, name: 'Janeiro', color: 'border-l-4 border-gray-200' },
             { id: 1, name: 'Fevereiro', color: 'border-l-4 border-purple-400' },
@@ -330,49 +168,85 @@
         const ORIGIN_OPTIONS = ['Interno', 'Externo', 'Misto'];
         const RESPONSIBLE_OPTIONS = ['Vera Nascimento', 'Gisely Rocha'];
 
-        // --- Inicialização DOM ---
-        document.addEventListener('DOMContentLoaded', () => {
+        // --- Inicialização ---
+        async function init() {
+            // Setup UI Events iniciais
+            document.getElementById('mobile-menu-btn').onclick = () => {
+                document.getElementById('mobile-menu').classList.toggle('hidden');
+            };
+            document.getElementById('btn-cancel-modal').onclick = closeModal;
             document.getElementById('print-date').innerText = new Date().toLocaleDateString();
+
+            // Setup Auth
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                document.getElementById('loading').innerHTML = `<p class="text-red-500">Erro de conexão: ${error.message}</p>`;
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                state.user = user;
+                document.getElementById('loading-status').innerText = "Carregando dados...";
+                setupRealtimeListeners();
+                renderApp(); // Renderiza a interface imediatamente após auth
+            }
         });
 
-        // --- Navegação ---
-        function changeView(viewName) {
-            window.state.view = viewName;
-            renderApp();
-        }
-
-        function changeMonth(monthId) {
-            window.state.selectedMonth = monthId;
-            renderApp();
-        }
-
-        function toggleMobileMenu() {
-            document.getElementById('mobile-menu').classList.toggle('hidden');
-        }
-
-        // --- Renderização Principal ---
-        function renderApp() {
-            if (!window.state.user) return; 
-
-            const content = document.getElementById('app-content');
+        // --- Realtime Listeners ---
+        function setupRealtimeListeners() {
+            const collections = ['activities', 'crises', 'notifications', 'reports', 'holidays'];
             
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.dataset.view === window.state.view) {
-                    btn.className = 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all';
-                } else {
-                    btn.className = 'nav-btn nav-btn-inactive px-4 py-2 rounded-md text-sm font-medium transition-all';
-                }
-            });
+            collections.forEach(col => {
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', col), (snapshot) => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    if (col === 'reports') {
+                        const reportsObj = {};
+                        snapshot.docs.forEach(doc => { reportsObj[doc.id] = doc.data(); });
+                        state.monthlyReports = reportsObj;
+                    } else if (col === 'notifications') {
+                        state.notifications = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    } else {
+                        state[col] = data;
+                    }
+                    
+                    // Se for a primeira vez carregando feriados e estiver vazio
+                    if (col === 'holidays' && data.length === 0) {
+                         // Evitar loop infinito, apenas verifique se já tentamos seedar
+                    }
 
-            let monthSelectorHTML = '';
-            if (window.state.view === 'month' || window.state.view === 'reports') {
-                monthSelectorHTML = `
+                    renderApp(); // Re-renderiza quando dados chegam
+                }, (error) => console.error(`Erro em ${col}:`, error));
+            });
+        }
+
+        // --- Lógica de Renderização ---
+        function renderApp() {
+            if (!state.user) return; // Ainda não logado
+
+            // Render Nav Bars
+            renderNavigation();
+
+            // Render Content View
+            const content = document.getElementById('app-content');
+            let html = '';
+
+            // Seletor de Mês (apenas para algumas views)
+            if (state.view === 'month' || state.view === 'reports') {
+                html += `
                     <div class="mb-8 overflow-x-auto pb-4 no-print">
                         <div class="flex gap-2 min-w-max px-1">
                             ${MONTHS_DATA.map(m => `
-                                <button onclick="changeMonth(${m.id})" 
+                                <button data-action="changeMonth" data-id="${m.id}"
                                     class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm
-                                    ${window.state.selectedMonth === m.id 
+                                    ${state.selectedMonth === m.id 
                                         ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-offset-2 ring-blue-900' 
                                         : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'}">
                                     ${m.name}
@@ -383,34 +257,58 @@
                 `;
             }
 
-            let viewHTML = '';
-            if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
-            else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
-            else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
-            else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
-            else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
+            if (state.view === 'dashboard') html += getDashboardHTML();
+            else if (state.view === 'month') html += getMonthViewHTML();
+            else if (state.view === 'calendar') html += getCalendarViewHTML();
+            else if (state.view === 'crisis') html += getCrisisViewHTML();
+            else if (state.view === 'reports') html += getReportsViewHTML();
 
-            content.innerHTML = monthSelectorHTML + viewHTML;
+            content.innerHTML = html;
+            
+            // Re-bind eventos e icones
             lucide.createIcons();
-            attachInputListeners();
+            attachEventListeners();
         }
 
-        // --- Views ---
+        function renderNavigation() {
+            const views = [
+                { id: 'dashboard', label: 'Dashboard' },
+                { id: 'month', label: 'Ações do Mês' },
+                { id: 'calendar', label: 'Calendário Anual' },
+                { id: 'reports', label: 'Relatórios & Metas' },
+                { id: 'crisis', label: 'Riscos & Crises' }
+            ];
+
+            const btnClass = (isActive) => isActive 
+                ? 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all'
+                : 'nav-btn nav-btn-inactive px-4 py-2 rounded-md text-sm font-medium transition-all';
+
+            // Desktop
+            const desktopNav = document.getElementById('desktop-nav');
+            desktopNav.innerHTML = views.map(v => 
+                `<button data-action="changeView" data-view="${v.id}" class="${btnClass(state.view === v.id)}">${v.label}</button>`
+            ).join('');
+
+            // Mobile
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.innerHTML = views.map(v => 
+                `<button data-action="changeView" data-view="${v.id}" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">${v.label}</button>`
+            ).join('');
+        }
+
+        // --- HTML Generators (Vistas) ---
 
         function getDashboardHTML() {
-            const activities = window.state.activities;
-            const totalActs = activities.length;
-            const completedActs = activities.filter(a => a.status === 'Concluído');
+            const totalActs = state.activities.length;
+            const completedActs = state.activities.filter(a => a.status === 'Concluído');
             const annualAchieved = completedActs.length;
-            const annualGoal = totalActs; 
+            const annualGoal = totalActs;
             
-            // Média Real Geral (Anual)
             const ratedEvents = completedActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
             const totalSatisfaction = ratedEvents.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
             const averageSatisfaction = ratedEvents.length > 0 ? Math.round(totalSatisfaction / ratedEvents.length) : 0;
 
-            // TOP EVENTOS
-            const topEvents = activities
+            const topEvents = state.activities
                 .filter(a => a.status === 'Concluído' && a.satisfaction && !isNaN(parseFloat(a.satisfaction)))
                 .sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction))
                 .slice(0, 5);
@@ -421,7 +319,7 @@
                         <div class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 font-bold rounded-full text-xs">${idx + 1}º</div>
                         <div>
                             <p class="text-sm font-bold text-gray-800">${evt.eventName || 'Evento sem nome'}</p>
-                            <p class="text-[10px] text-gray-500">${evt.type} • ${new Date(evt.date).toLocaleDateString('pt-BR')}</p>
+                            <p class="text-[10px] text-gray-500">${evt.type} • ${new Date(evt.date || Date.now()).toLocaleDateString('pt-BR')}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-green-700 font-bold text-xs">
@@ -430,13 +328,13 @@
                 </div>
             `).join('') || '<p class="text-xs text-gray-400 italic text-center py-4">Nenhum evento avaliado ainda.</p>';
 
-            const notificationsHTML = window.state.notifications.map(n => `
+            const notificationsHTML = state.notifications.map(n => `
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-2 rounded shadow-sm flex justify-between items-start">
                     <div>
                         <p class="text-sm text-yellow-800 font-medium">${n.text}</p>
                         <p class="text-[10px] text-yellow-600 mt-1">${new Date(n.timestamp).toLocaleString()}</p>
                     </div>
-                    <button onclick="deleteNotification('${n.id}')" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button>
+                    <button data-action="deleteNotification" data-id="${n.id}" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button>
                 </div>
             `).join('');
 
@@ -444,7 +342,7 @@
                 <div class="space-y-6 animate-fadeIn">
                     <div class="flex justify-between items-center border-b pb-4">
                         <h2 class="text-2xl font-bold text-gray-800">Dashboard Geral & Metas em Tempo Real</h2>
-                        <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
+                        <button data-action="exportPDF" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
                             <i data-lucide="printer"></i> Exportar PDF
                         </button>
                     </div>
@@ -459,7 +357,6 @@
                                 <div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${averageSatisfaction}%"></div>
                             </div>
                         </div>
-
                         <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600">
                             <div class="flex justify-between items-center">
                                 <div><p class="text-sm text-gray-500 font-medium">Meta Anual (Ações)</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal}</h3></div>
@@ -474,19 +371,18 @@
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
                             <div class="flex justify-between items-center">
-                                <div><p class="text-sm text-gray-500 font-medium">Riscos/Crises</p><h3 class="text-3xl font-bold text-gray-800">${window.state.crises.length}</h3></div>
+                                <div><p class="text-sm text-gray-500 font-medium">Riscos/Crises</p><h3 class="text-3xl font-bold text-gray-800">${state.crises.length}</h3></div>
                                 <i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- Evolução Anual -->
                         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col">
                             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução Anual</h3>
                             <div class="h-48 flex items-end gap-2 justify-between px-2">
                                 ${MONTHS_DATA.map(m => {
-                                    const count = activities.filter(a => a.month === m.id).length;
+                                    const count = state.activities.filter(a => a.month === m.id).length;
                                     const height = count > 0 ? `${Math.min((count / 15) * 100, 100)}%` : '4px';
                                     return `
                                         <div class="flex flex-col items-center flex-1 group relative">
@@ -499,20 +395,16 @@
                             </div>
                         </div>
 
-                        <!-- Top Eventos (NOVO) -->
                         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full">
                             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Top Eventos do Ano</h3>
-                            <div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">
-                                ${topEventsHTML}
-                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">${topEventsHTML}</div>
                         </div>
 
-                        <!-- Mural de Notificações -->
                         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full">
                             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-yellow-500"></i> Mural de Avisos</h3>
                             <div class="flex gap-2 mb-4">
                                 <input type="text" id="new-notification" placeholder="Novo aviso..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm">
-                                <button onclick="addNotification()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button>
+                                <button data-action="addNotification" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button>
                             </div>
                             <div class="overflow-y-auto flex-1 custom-scrollbar max-h-[200px]">
                                 ${notificationsHTML || '<p class="text-xs text-gray-400 italic text-center mt-4">Nenhuma notificação registrada.</p>'}
@@ -524,9 +416,9 @@
         }
 
         function getMonthViewHTML() {
-            const month = MONTHS_DATA[window.state.selectedMonth];
-            const monthHolidays = window.state.holidays.filter(h => h.month === window.state.selectedMonth);
-            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
+            const month = MONTHS_DATA[state.selectedMonth];
+            const monthHolidays = state.holidays.filter(h => h.month === state.selectedMonth);
+            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
 
             return `
                 <div class="space-y-8 animate-fadeIn">
@@ -534,36 +426,34 @@
                         <div class="flex justify-between items-center">
                             <h2 class="text-2xl font-bold text-gray-800 uppercase">${month.name}</h2>
                             <div class="flex gap-2 no-print">
-                                <button onclick="handleSave()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"><i data-lucide="save" size="16"></i> Salvar</button>
-                                <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"><i data-lucide="printer" size="16"></i> Exportar PDF</button>
+                                <button data-action="handleSave" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"><i data-lucide="save" size="16"></i> Salvar</button>
+                                <button data-action="exportPDF" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"><i data-lucide="printer" size="16"></i> Exportar PDF</button>
                             </div>
                         </div>
-
                         <div class="mt-6 pt-4 border-t border-gray-100">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2">
                                 <h4 class="text-xs font-bold text-gray-500 uppercase">Datas Comemorativas (Manual)</h4>
                                 <div class="flex gap-2 no-print bg-gray-50 p-1 rounded items-center">
                                     <input type="text" id="holiday-day" placeholder="Dia" class="w-16 border border-gray-300 rounded px-2 py-1 text-xs">
                                     <input type="text" id="holiday-name" placeholder="Evento" class="w-32 border border-gray-300 rounded px-2 py-1 text-xs">
-                                    <button onclick="addHoliday()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700">Adicionar</button>
+                                    <button data-action="addHoliday" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700">Adicionar</button>
                                 </div>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 ${monthHolidays.map(h => `
                                     <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs rounded-full border border-blue-100">
                                         <span class="font-bold">${h.day}</span> - ${h.name}
-                                        <button onclick="removeHoliday('${h.id}')" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button>
+                                        <button data-action="removeHoliday" data-id="${h.id}" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button>
                                     </div>
                                 `).join('')}
                                 ${monthHolidays.length === 0 ? '<span class="text-xs text-gray-400 italic">Nenhuma data cadastrada.</span>' : ''}
                             </div>
                         </div>
                     </div>
-
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div class="flex justify-between items-center p-4 border-b bg-gray-50">
                             <h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="file-text" class="text-blue-600"></i> Cronograma & Ocorrências</h3>
-                            <button onclick="addActivity()" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button>
+                            <button data-action="addActivity" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button>
                         </div>
                         <div class="overflow-x-auto custom-scrollbar">
                             <table class="w-full text-sm text-left whitespace-nowrap">
@@ -587,39 +477,39 @@
                                         return `
                                         <tr class="hover:bg-gray-50 align-top">
                                             <td class="px-4 py-3">
-                                                <select onchange="updateActivity('${act.id}', 'type', this.value)" class="w-full border rounded text-xs p-1.5 focus:ring-blue-500 font-bold ${getTypeColor(act.type)}">
+                                                <select data-type="activity" data-id="${act.id}" data-field="type" class="w-full border rounded text-xs p-1.5 focus:ring-blue-500 font-bold ${getTypeColor(act.type)}">
                                                     ${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <input type="text" value="${act.eventName || ''}" data-id="${act.id}" data-field="eventName" placeholder="Nome..." class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium">
+                                                <input type="text" value="${act.eventName || ''}" data-type="activity" data-id="${act.id}" data-field="eventName" placeholder="Nome..." class="w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium">
                                             </td>
                                             <td class="px-4 py-3">
-                                                <select onchange="updateActivity('${act.id}', 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">
+                                                <select data-type="activity" data-id="${act.id}" data-field="audience" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">
                                                     ${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex flex-col gap-1">
-                                                    <input type="date" value="${act.date || ''}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1">
-                                                    <input type="time" value="${act.time || ''}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1">
+                                                    <input type="date" value="${act.date || ''}" data-type="activity" data-id="${act.id}" data-field="date" class="w-full border border-gray-300 rounded text-xs p-1">
+                                                    <input type="time" value="${act.time || ''}" data-type="activity" data-id="${act.id}" data-field="time" class="w-full border border-gray-300 rounded text-xs p-1">
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <input type="text" value="${act.link || ''}" data-id="${act.id}" data-field="link" placeholder="http://..." class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600">
+                                                <input type="text" value="${act.link || ''}" data-type="activity" data-id="${act.id}" data-field="link" placeholder="http://..." class="w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600">
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex flex-col gap-1">
-                                                    <input type="text" value="${act.postName || ''}" data-id="${act.id}" data-field="postName" placeholder="Resp." class="act-input w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50">
-                                                    <textarea data-id="${act.id}" data-field="postOccurrence" placeholder="O que houve?" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea>
+                                                    <input type="text" value="${act.postName || ''}" data-type="activity" data-id="${act.id}" data-field="postName" placeholder="Resp." class="w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50">
+                                                    <textarea data-type="activity" data-id="${act.id}" data-field="postOccurrence" placeholder="O que houve?" class="w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea>
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <textarea data-id="${act.id}" data-field="postAction" placeholder="Decisão..." class="act-input w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea>
+                                                <textarea data-type="activity" data-id="${act.id}" data-field="postAction" placeholder="Decisão..." class="w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea>
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex items-center gap-1 mb-1">
-                                                    <input type="number" value="${act.satisfaction || ''}" data-id="${act.id}" data-field="satisfaction" placeholder="%" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100">
+                                                    <input type="number" value="${act.satisfaction || ''}" data-type="activity" data-id="${act.id}" data-field="satisfaction" placeholder="%" class="w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100">
                                                     <span class="text-xs text-gray-500">%</span>
                                                 </div>
                                                 <div class="w-full bg-gray-200 rounded-full h-1.5">
@@ -627,13 +517,12 @@
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <select onchange="updateActivity('${act.id}', 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" 
-                                                    style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">
+                                                <select data-type="activity" data-id="${act.id}" data-field="status" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">
                                                     ${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3 text-center no-print">
-                                                <button onclick="requestDeleteActivity('${act.id}')" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button>
+                                                <button data-action="deleteActivity" data-id="${act.id}" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button>
                                             </td>
                                         </tr>
                                     `}).join('')}
@@ -646,23 +535,20 @@
             `;
         }
 
-        // Demais views (Calendar, Crisis) permanecem idênticas
         function getCalendarViewHTML() {
             return `
                 <div class="space-y-6 animate-fadeIn">
                      <div class="flex justify-between items-center border-b pb-4">
                         <h2 class="text-2xl font-bold text-gray-800">Calendário Anual Consolidado</h2>
-                        <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
+                        <button data-action="exportPDF" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
                             <i data-lucide="printer"></i> Exportar
                         </button>
                     </div>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${MONTHS_DATA.map(m => {
-                            const mActs = window.state.activities.filter(a => a.month === m.id);
+                            const mActs = state.activities.filter(a => a.month === m.id);
                             const total = mActs.length;
                             const achieved = mActs.filter(a => a.status === 'Concluído').length;
-                            
                             return `
                                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden print-break-inside-avoid flex flex-col h-auto min-h-[150px]">
                                     <div class="px-4 py-3 ${m.color} bg-gray-50 border-b border-gray-100 flex justify-between items-center">
@@ -670,12 +556,11 @@
                                         <span class="text-xs font-bold bg-white px-2 py-1 rounded shadow-sm border text-gray-500">${total} Ações</span>
                                     </div>
                                     <div class="p-4 flex-1">
-                                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Eventos Agendados:</h4>
                                         <ul class="space-y-1 mb-4">
                                             ${mActs.length > 0 ? mActs.map(act => `
                                                 <li class="text-xs text-gray-700 flex items-start gap-2">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span>
-                                                    <span class="" title="${act.eventName || 'Sem nome'}">${act.eventName || 'Sem nome'}</span>
+                                                    <span title="${act.eventName || 'Sem nome'}">${act.eventName || 'Sem nome'}</span>
                                                 </li>
                                             `).join('') : '<li class="text-xs text-gray-300 italic">Nenhum evento</li>'}
                                         </ul>
@@ -701,292 +586,114 @@
                             <p class="text-red-700 text-sm max-w-2xl">Classificação de riscos e preenchimento manual.</p>
                         </div>
                         <div class="flex gap-2 no-print w-full md:w-auto">
-                            <button onclick="handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
-                            <button onclick="exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i data-lucide="printer" size="16"></i> Exportar PDF</button>
+                            <button data-action="handleSave" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
+                            <button data-action="exportPDF" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i data-lucide="printer" size="16"></i> Exportar PDF</button>
                         </div>
                     </div>
-
-                    <button onclick="addCrisis()" class="w-full py-4 border-2 border-dashed border-red-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors font-bold uppercase tracking-wide no-print flex items-center justify-center gap-2">
+                    <button data-action="addCrisis" class="w-full py-4 border-2 border-dashed border-red-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors font-bold uppercase tracking-wide no-print flex items-center justify-center gap-2">
                         <i data-lucide="plus" size="20"></i> Registrar Novo Risco ou Ocorrência
                     </button>
-
                     <div class="grid gap-6">
-                        ${window.state.crises.map((item, index) => `
+                        ${state.crises.map((item, index) => `
                             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative print-break-inside-avoid">
                                 <div class="absolute top-4 right-4 no-print">
-                                    <button onclick="requestDeleteCrisis('${item.id}')" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button>
+                                    <button data-action="deleteCrisis" data-id="${item.id}" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button>
                                 </div>
                                 <h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#${index + 1}</span> Ocorrência de Setor</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-md border border-gray-100">
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label>
-                                        <select onchange="updateCrisis('${item.id}', 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">
-                                            ${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Origem</label>
-                                        <select onchange="updateCrisis('${item.id}', 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
-                                            ${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Setor</label>
-                                        <select onchange="updateCrisis('${item.id}', 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
-                                            ${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label>
-                                        <select onchange="updateCrisis('${item.id}', 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
-                                            ${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}
-                                        </select>
-                                    </div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label><select data-type="crisis" data-id="${item.id}" data-field="riskLevel" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Origem</label><select data-type="crisis" data-id="${item.id}" data-field="origin" class="w-full border border-gray-300 rounded p-2 text-sm">${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Setor</label><select data-type="crisis" data-id="${item.id}" data-field="sector" class="w-full border border-gray-300 rounded p-2 text-sm">${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label><select data-type="crisis" data-id="${item.id}" data-field="responsible" class="w-full border border-gray-300 rounded p-2 text-sm">${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
                                 </div>
-                                <div class="mb-4">
-                                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" size="12"></i> Plano de Ação Corretiva</label>
-                                    <textarea data-cid="${item.id}" data-cfield="correctiveAction" class="crisis-input w-full border border-red-100 bg-white rounded p-3 text-sm focus:ring-red-500 min-h-[80px]" placeholder="Descreva ação tomada...">${item.correctiveAction}</textarea>
-                                </div>
+                                <div class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" size="12"></i> Plano de Ação</label><textarea data-type="crisis" data-id="${item.id}" data-field="correctiveAction" class="w-full border border-red-100 bg-white rounded p-3 text-sm focus:ring-red-500 min-h-[80px]" placeholder="Ação tomada...">${item.correctiveAction}</textarea></div>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div class="bg-gray-50 p-3 rounded border border-gray-100">
-                                        <label class="block text-xs font-bold text-gray-600 mb-1">Impactos / Riscos</label>
-                                        <textarea data-cid="${item.id}" data-cfield="risks" class="crisis-input w-full bg-white border border-gray-200 rounded p-2 text-xs h-24 resize-none">${item.risks}</textarea>
-                                    </div>
-                                    <div class="bg-blue-50 p-3 rounded border border-blue-100">
-                                        <label class="block text-xs font-bold text-blue-800 mb-1">Aprendizados</label>
-                                        <textarea data-cid="${item.id}" data-cfield="learning" class="crisis-input w-full bg-white border border-blue-200 rounded p-2 text-xs h-24 resize-none">${item.learning}</textarea>
-                                    </div>
-                                    <div class="bg-green-50 p-3 rounded border border-green-100">
-                                        <label class="block text-xs font-bold text-green-800 mb-1">Melhoria Futura</label>
-                                        <textarea data-cid="${item.id}" data-cfield="improvement" class="crisis-input w-full bg-white border border-green-200 rounded p-2 text-xs h-24 resize-none">${item.improvement}</textarea>
-                                    </div>
+                                    <div class="bg-gray-50 p-3 rounded border border-gray-100"><label class="block text-xs font-bold text-gray-600 mb-1">Impactos</label><textarea data-type="crisis" data-id="${item.id}" data-field="risks" class="w-full bg-white border border-gray-200 rounded p-2 text-xs h-24 resize-none">${item.risks}</textarea></div>
+                                    <div class="bg-blue-50 p-3 rounded border border-blue-100"><label class="block text-xs font-bold text-blue-800 mb-1">Aprendizados</label><textarea data-type="crisis" data-id="${item.id}" data-field="learning" class="w-full bg-white border border-blue-200 rounded p-2 text-xs h-24 resize-none">${item.learning}</textarea></div>
+                                    <div class="bg-green-50 p-3 rounded border border-green-100"><label class="block text-xs font-bold text-green-800 mb-1">Melhoria</label><textarea data-type="crisis" data-id="${item.id}" data-field="improvement" class="w-full bg-white border border-green-200 rounded p-2 text-xs h-24 resize-none">${item.improvement}</textarea></div>
                                 </div>
                             </div>
                         `).join('')}
-                        ${window.state.crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
                     </div>
                 </div>
             `;
         }
 
         function getReportsViewHTML() {
-            const activities = window.state.activities;
-            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
+            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
             const total = monthActs.length;
             const completed = monthActs.filter(a => a.status === 'Concluído').length;
             const missed = total - completed;
             const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
-            
-            // Cálculo Média MENSAL
             const ratedMonthActs = monthActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
-            const totalMonthSat = ratedMonthActs.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
-            const avgMonthSat = ratedMonthActs.length > 0 ? Math.round(totalMonthSat / ratedMonthActs.length) : 0;
-
-            const report = window.state.monthlyReports[window.state.selectedMonth] || { explanation: '', highlights: '', suggestions: '' };
+            const avgMonthSat = ratedMonthActs.length > 0 ? Math.round(ratedMonthActs.reduce((a, b) => a + parseFloat(b.satisfaction), 0) / ratedMonthActs.length) : 0;
+            const report = state.monthlyReports[state.selectedMonth] || { explanation: '', highlights: '' };
 
             return `
                 <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">Relatório de Desempenho e Metas</h2>
-                            <p class="text-gray-500">Mês de Referência: <span class="font-bold text-blue-600">${MONTHS_DATA[window.state.selectedMonth].name}</span></p>
+                            <h2 class="text-2xl font-bold text-gray-800">Relatório de Desempenho</h2>
+                            <p class="text-gray-500">Mês: <span class="font-bold text-blue-600">${MONTHS_DATA[state.selectedMonth].name}</span></p>
                         </div>
                         <div class="flex gap-2 no-print w-full md:w-auto flex-wrap">
-                             <button onclick="exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"><i data-lucide="file-check-2" size="16"></i> Exportar para Alta Gestão</button>
-                            <button onclick="requestClearReport()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-200 rounded hover:bg-red-200"><i data-lucide="eraser" size="16"></i> Apagar</button>
-                            <button onclick="handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
+                             <button data-action="exportPDF" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"><i data-lucide="file-check-2" size="16"></i> Exportar Gestão</button>
+                            <button data-action="clearReport" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-200 rounded hover:bg-red-200"><i data-lucide="eraser" size="16"></i> Apagar</button>
+                            <button data-action="handleSave" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
                         </div>
                     </div>
-
                     <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                         <h3 class="text-sm font-bold text-gray-500 uppercase mb-4 border-b pb-2">Metas Consolidadas do Mês</h3>
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div class="p-4 bg-gray-50 rounded text-center"><div class="text-3xl font-bold text-gray-800">${total}</div><div class="text-xs font-bold text-gray-500 uppercase mt-1">Meta Mensal (Ações)</div></div>
-                             <div class="p-4 bg-green-50 rounded text-center"><div class="text-3xl font-bold text-green-600">${completed}</div><div class="text-xs font-bold text-green-800 uppercase mt-1">Metas Atingidas</div></div>
+                            <div class="p-4 bg-gray-50 rounded text-center"><div class="text-3xl font-bold text-gray-800">${total}</div><div class="text-xs font-bold text-gray-500 uppercase mt-1">Meta Mensal</div></div>
+                             <div class="p-4 bg-green-50 rounded text-center"><div class="text-3xl font-bold text-green-600">${completed}</div><div class="text-xs font-bold text-green-800 uppercase mt-1">Atingidas</div></div>
                             <div class="p-4 bg-yellow-50 rounded text-center"><div class="text-3xl font-bold text-yellow-600">${missed}</div><div class="text-xs font-bold text-yellow-800 uppercase mt-1">Não Alcançadas</div></div>
-                            <div class="p-4 bg-blue-50 rounded text-center"><div class="text-3xl font-bold text-blue-600">${internal}</div><div class="text-xs font-bold text-blue-800 uppercase mt-1">Eventos Internos</div></div>
-                            <!-- Card Média Mês (NOVO) -->
+                            <div class="p-4 bg-blue-50 rounded text-center"><div class="text-3xl font-bold text-blue-600">${internal}</div><div class="text-xs font-bold text-blue-800 uppercase mt-1">Internos</div></div>
                             <div class="p-4 bg-indigo-50 rounded text-center border border-indigo-100"><div class="text-3xl font-bold text-indigo-600">${avgMonthSat}%</div><div class="text-xs font-bold text-indigo-800 uppercase mt-1">Média Satisfação</div></div>
                         </div>
                     </div>
-
                     <div class="space-y-6">
                         <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
                             <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-gray-800 text-lg">1. Análise Direta de Ocorrências e Entregas</h3>
-                                <button onclick="generateAutoText()" class="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Análise Automática</button>
+                                <h3 class="font-bold text-gray-800 text-lg">1. Análise Direta</h3>
+                                <button data-action="generateAutoText" class="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Análise</button>
                             </div>
-                            <textarea id="report-explanation" oninput="updateReport('explanation', this.value)" class="w-full border border-gray-300 rounded p-4 h-48 focus:ring-blue-500 resize-none leading-relaxed text-sm text-gray-700" placeholder="Escreva a análise da alta gestão...">${report.explanation}</textarea>
+                            <textarea id="report-explanation" data-type="report" data-field="explanation" class="w-full border border-gray-300 rounded p-4 h-48 focus:ring-blue-500 resize-none leading-relaxed text-sm text-gray-700" placeholder="Análise...">${report.explanation}</textarea>
                         </div>
                         <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
                             <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-gray-800 text-lg">2. Pontos Altos & Resultados Consolidados</h3>
-                                <button onclick="generateHighlights()" class="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Destaques</button>
+                                <h3 class="font-bold text-gray-800 text-lg">2. Pontos Altos</h3>
+                                <button data-action="generateHighlights" class="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Destaques</button>
                             </div>
-                            <textarea id="report-highlights" oninput="updateReport('highlights', this.value)" class="w-full border border-gray-300 rounded p-4 h-32 focus:ring-green-500 resize-none text-sm" placeholder="Liste resultados...">${report.highlights}</textarea>
+                            <textarea id="report-highlights" data-type="report" data-field="highlights" class="w-full border border-gray-300 rounded p-4 h-32 focus:ring-green-500 resize-none text-sm" placeholder="Resultados...">${report.highlights}</textarea>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        // --- Helpers de Estilo ---
+        // --- Helpers ---
         function getTypeColor(type) {
-            switch (type) {
-                case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
-                case 'Evento Interno': return 'bg-blue-100 text-blue-800 border-blue-200';
-                case 'Evento Externo': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-                case 'Campanha': return 'bg-pink-100 text-pink-800 border-pink-200';
-                case 'Treinamento': return 'bg-orange-100 text-orange-800 border-orange-200';
-                case 'Gravação Externa': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-                default: return 'bg-white border-gray-300 text-gray-700';
-            }
+            if (type === 'TI') return 'bg-purple-100 text-purple-800 border-purple-200';
+            if (type === 'Evento Interno') return 'bg-blue-100 text-blue-800 border-blue-200';
+            if (type === 'Evento Externo') return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+            if (type === 'Campanha') return 'bg-pink-100 text-pink-800 border-pink-200';
+            if (type === 'Treinamento') return 'bg-orange-100 text-orange-800 border-orange-200';
+            if (type === 'Gravação Externa') return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+            return 'bg-white border-gray-300 text-gray-700';
         }
-
         function getStatusColor(status) {
             if (status === 'Concluído') return { bg: '#dcfce7', text: '#166534' };
             if (status === 'Planejado') return { bg: '#fef9c3', text: '#854d0e' };
             return { bg: '#fee2e2', text: '#991b1b' };
         }
-
         function getRiskColorClass(level) {
             if (level.includes('Grave') || level.includes('Extrema')) return 'text-red-600 border-red-200 bg-red-50';
             if (level.includes('Moderada')) return 'text-orange-600 border-orange-200';
             return 'text-gray-700 border-gray-300';
         }
 
-        function attachInputListeners() {
-            document.querySelectorAll('.act-input').forEach(input => {
-                input.addEventListener('change', (e) => { // Change evita updates excessivos, pode usar blur ou debounce
-                    const id = e.target.dataset.id;
-                    const field = e.target.dataset.field;
-                    window.dbUpdateActivity(id, field, e.target.value);
-                });
-            });
-            document.querySelectorAll('.crisis-input').forEach(input => {
-                input.addEventListener('change', (e) => {
-                    const id = e.target.dataset.cid;
-                    const field = e.target.dataset.cfield;
-                    window.dbUpdateCrisis(id, field, e.target.value);
-                });
-            });
-        }
-
-        // --- Actions ---
-
-        function handleSave() { alert('Alterações salvas automaticamente no banco de dados!'); }
-        function exportPDF() { setTimeout(() => window.print(), 100); }
-
-        function openConfirmModal(msg, actionCallback) {
-            document.getElementById('modal-message').innerText = msg;
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-            confirmBtn.onclick = () => { actionCallback(); closeModal(); };
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
-        function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
-
-        // --- Data Manipulation ---
-
-        function addHoliday() {
-            const dayInput = document.getElementById('holiday-day');
-            const nameInput = document.getElementById('holiday-name');
-            if (dayInput.value && nameInput.value) {
-                window.dbAddHoliday({ month: window.state.selectedMonth, day: dayInput.value, name: nameInput.value });
-            }
-        }
-        function removeHoliday(id) {
-            openConfirmModal("Apagar esta data comemorativa?", () => window.dbDeleteHoliday(id));
-        }
-
-        function addActivity() {
-            window.dbAddActivity({
-                month: window.state.selectedMonth,
-                type: 'Evento Interno',
-                eventName: '',
-                audience: 'Interno',
-                link: '',
-                date: '', time: '', 
-                postName: '', postOccurrence: '', postAction: '',
-                satisfaction: '', // Média Real input
-                status: 'Planejado'
-            });
-        }
-        function updateActivity(id, field, value) {
-            window.dbUpdateActivity(id, field, value);
-        }
-        function requestDeleteActivity(id) {
-            openConfirmModal("Deseja excluir esta ação?", () => window.dbDeleteActivity(id));
-        }
-
-        function addCrisis() {
-            window.dbAddCrisis({
-                date: new Date().toISOString().split('T')[0],
-                riskLevel: 'Sem relevância crítica', origin: 'Interno', sector: 'Comunicação', responsible: 'Vera Nascimento',
-                correctiveAction: '', risks: '', learning: '', improvement: ''
-            });
-        }
-        function updateCrisis(id, field, value) {
-            window.dbUpdateCrisis(id, field, value);
-        }
-        function requestDeleteCrisis(id) {
-            openConfirmModal("Apagar este registro de risco/crise?", () => window.dbDeleteCrisis(id));
-        }
-
-        function updateReport(field, value) {
-            window.dbUpdateReport(window.state.selectedMonth, field, value);
-        }
-        function requestClearReport() {
-            openConfirmModal("Apagar o relatório deste mês?", () => window.dbClearReport(window.state.selectedMonth));
-        }
-
-        // Notificações
-        function addNotification() {
-            const input = document.getElementById('new-notification');
-            if(input.value.trim()) {
-                window.dbAddNotification(input.value);
-                input.value = '';
-            }
-        }
-        function deleteNotification(id) {
-            window.dbDeleteNotification(id);
-        }
-
-        function generateAutoText() {
-            const activities = window.state.activities;
-            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
-            const total = monthActs.length;
-            const completed = monthActs.filter(a => a.status === 'Concluído').length;
-            const efficiency = total > 0 ? Math.round((completed/total)*100) : 0;
-            
-            let text = `ANÁLISE DE ENTREGAS PARA ALTA GESTÃO - ${MONTHS_DATA[window.state.selectedMonth].name.toUpperCase()}\n\n`;
-            if (total === 0) {
-                text += "Não houve registros de atividades planejadas para este período.";
-            } else {
-                text += `O mês encerrou com ${total} ações planejadas e ${completed} metas atingidas. A eficiência de execução atingiu ${efficiency}%.\n\n`;
-            }
-            updateReport('explanation', text);
-        }
-        function generateHighlights() {
-            const activities = window.state.activities;
-            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
-            const completedActs = monthActs.filter(a => a.status === 'Concluído');
-            const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
-            const external = monthActs.filter(a => a.type === 'Evento Externo').length;
-
-            let text = "RESULTADOS CONSOLIDADOS:\n\n";
-            if (completedActs.length === 0) {
-                text += "- Nenhuma atividade concluída para destacar ainda.";
-            } else {
-                completedActs.forEach(act => {
-                    text += `• ${act.type}: "${act.eventName || 'Evento sem nome'}" - Público: ${act.audience}\n  Satisfação Real: ${act.satisfaction || '0'}%\n`;
-                });
-                text += `\nRESUMO QUANTITATIVO:\n`;
-                if (internal > 0) text += `- ${internal} Eventos Internos Realizados\n`;
-                if (external > 0) text += `- ${external} Eventos Externos Executados\n`;
-            }
-            updateReport('highlights', text);
-        }
-
-    </script>
-</body>
-</html>
+        // --- Event Delegation ---
+        function attachEventListeners() {
+            // Inputs change events
+            const appContent
