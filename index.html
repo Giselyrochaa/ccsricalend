@@ -21,6 +21,13 @@
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
         
+        // Verificação de segurança da configuração
+        if (Object.keys(firebaseConfig).length === 0) {
+            const loadingEl = document.getElementById('loading');
+            if(loadingEl) loadingEl.innerHTML = '<p class="text-red-600 font-bold">Erro de Configuração: Firebase não detectado.</p><p class="text-sm text-gray-500">Se você baixou este arquivo, precisa configurar as chaves do Firebase manualmente no código.</p>';
+            console.error("Firebase config is empty.");
+        }
+
         // Inicialização
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -42,10 +49,15 @@
         // --- Autenticação e Listeners em Tempo Real ---
         
         async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erro na autenticação:", error);
+                document.getElementById('loading').innerHTML = `<p class="text-red-500">Erro de conexão: ${error.message}</p>`;
             }
         }
 
@@ -54,6 +66,8 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 window.state.user = user;
+                // CORREÇÃO CRÍTICA: Força a renderização imediata para sair da tela de "Carregando"
+                renderApp(); 
                 setupRealtimeListeners();
             }
         });
@@ -92,9 +106,7 @@
              // Listener: Feriados
              onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), (snapshot) => {
                 window.state.holidays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (window.state.holidays.length === 0) {
-                    addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), { month: 0, day: '01', name: 'Confraternização Universal' });
-                }
+                // Seed inicial removido para evitar loop de escritas, renderiza vazio se não houver
                 renderApp();
             }, (error) => console.error("Erro feriados:", error));
         }
@@ -397,7 +409,7 @@
             const totalSatisfaction = ratedEvents.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
             const averageSatisfaction = ratedEvents.length > 0 ? Math.round(totalSatisfaction / ratedEvents.length) : 0;
 
-            // TOP EVENTOS (Novo: Calcula os 5 melhores avaliados)
+            // TOP EVENTOS
             const topEvents = activities
                 .filter(a => a.status === 'Concluído' && a.satisfaction && !isNaN(parseFloat(a.satisfaction)))
                 .sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction))
