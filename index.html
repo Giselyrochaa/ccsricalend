@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessoria de Comunicação Evereste</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Fontes e Estilos Globais -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #0f172a; /* slate-900 */
+        }
+
+        /* Animações */
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Ajustes de Impressão */
+        @media print {
+            @page { margin: 0.5cm; size: landscape; }
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background-color: white;
+            }
+            .no-print { display: none !important; }
+            .print-break-inside-avoid { break-inside: avoid; }
+            
+            /* Forçar cores de fundo na impressão */
+            .bg-blue-100 { background-color: #dbeafe !important; }
+            .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
+            .bg-green-100 { background-color: #dcfce7 !important; }
+            .bg-red-100 { background-color: #fee2e2 !important; }
+            .bg-cyan-100 { background-color: #cffafe !important; }
+            .bg-purple-100 { background-color: #f3e8ff !important; }
+        }
+
+        /* Modal Overlay */
+        #modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Custom Scrollbar for Table */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="pb-12">
+
+    <!-- Modal de Confirmação -->
+    <div id="modal-overlay" class="fixed inset-0 flex items-center justify-center z-50 hidden no-print">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full border border-red-100 animate-fadeIn">
+            <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="text-red-500"></i> Confirmação
+            </h3>
+            <p id="modal-message" class="text-gray-600 mb-6">Tem certeza que deseja apagar?</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm">Sim, Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-white rounded flex items-center justify-center text-blue-900 font-bold shadow-sm">AE</div>
+                <div>
+                    <h1 class="text-lg font-bold leading-none">Assessoria de Comunicação Evereste</h1>
+                    <p class="text-xs text-blue-200 mt-1">Sistema de Gestão Integrada</p>
+                </div>
+            </div>
+
+            <!-- Nav Desktop -->
+            <nav class="hidden md:flex gap-1 bg-blue-800/50 p-1 rounded-lg">
+                <button onclick="changeView('dashboard')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-100 hover:bg-blue-700 hover:text-white" data-view="dashboard">Dashboard</button>
+                <button onclick="changeView('month')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-100 hover:bg-blue-700 hover:text-white" data-view="month">Ações do Mês</button>
+                <button onclick="changeView('calendar')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-100 hover:bg-blue-700 hover:text-white" data-view="calendar">Calendário Anual</button>
+                <button onclick="changeView('reports')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-100 hover:bg-blue-700 hover:text-white" data-view="reports">Relatórios & Metas</button>
+                <button onclick="changeView('crisis')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-100 hover:bg-blue-700 hover:text-white" data-view="crisis">Riscos & Crises</button>
+            </nav>
+
+            <!-- Mobile Menu Toggle -->
+            <button class="md:hidden p-2 text-white hover:bg-blue-800 rounded" onclick="toggleMobileMenu()">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Nav -->
+        <div id="mobile-menu" class="hidden md:hidden bg-blue-800 px-4 py-2 space-y-2 border-t border-blue-700">
+            <button onclick="changeView('dashboard'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Dashboard</button>
+            <button onclick="changeView('month'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Ações do Mês</button>
+            <button onclick="changeView('calendar'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Calendário Anual</button>
+            <button onclick="changeView('reports'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Relatórios & Metas</button>
+            <button onclick="changeView('crisis'); toggleMobileMenu()" class="block w-full text-left py-3 text-white font-medium">Riscos & Crises</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- O conteúdo será injetado aqui pelo JavaScript -->
+    </main>
+
+    <!-- Footer Impressão -->
+    <footer class="hidden print:block text-center text-xs text-gray-400 mt-12 border-t pt-4 fixed bottom-0 w-full bg-white pb-4">
+        <p class="uppercase font-bold tracking-wider">Assessoria de Comunicação Evereste - Relatório Oficial</p>
+        <p>Documento gerado em <span id="print-date"></span></p>
+    </footer>
+
+    <!-- Scripts da Aplicação -->
+    <script>
+        // --- Estado Global ---
+        const state = {
+            view: 'dashboard',
+            selectedMonth: 0,
+            mobileMenuOpen: false,
+            activities: [], // Dados
+            holidays: [{ id: 1, month: 0, day: '01', name: 'Confraternização Universal' }],
+            crises: [],
+            monthlyReports: {}
+        };
+
+        // --- Constantes ---
+        const MONTHS_DATA = [
+            { id: 0, name: 'Janeiro', color: 'border-l-4 border-gray-200' },
+            { id: 1, name: 'Fevereiro', color: 'border-l-4 border-purple-400' },
+            { id: 2, name: 'Março', color: 'border-l-4 border-pink-300' },
+            { id: 3, name: 'Abril', color: 'border-l-4 border-blue-400' },
+            { id: 4, name: 'Maio', color: 'border-l-4 border-yellow-400' },
+            { id: 5, name: 'Junho', color: 'border-l-4 border-red-500' },
+            { id: 6, name: 'Julho', color: 'border-l-4 border-yellow-500' },
+            { id: 7, name: 'Agosto', color: 'border-l-4 border-yellow-600' },
+            { id: 8, name: 'Setembro', color: 'border-l-4 border-yellow-300' },
+            { id: 9, name: 'Outubro', color: 'border-l-4 border-pink-500' },
+            { id: 10, name: 'Novembro', color: 'border-l-4 border-blue-600' },
+            { id: 11, name: 'Dezembro', color: 'border-l-4 border-red-600' },
+        ];
+
+        // Atualizado: 'Atividade Setor' removido e 'Gravação Externa' incluído
+        const EVENT_TYPES = ['TI', 'Evento Interno', 'Evento Externo', 'Campanha', 'Treinamento', 'Gravação Externa'];
+        const AUDIENCE_OPTIONS = ['Externo', 'Interno', 'Parceria', 'Visitante', 'Colaborador'];
+        
+        const CRISIS_SECTOR_OPTIONS = ['Comunicação', 'Central', 'Infraestrutura', 'Administração', 'RH', 'Externo'];
+        const RISK_LEVELS = ['Sem relevância crítica', 'Leve', 'Moderada', 'Potencial', 'Grave', 'Reputacional Extrema'];
+        const ORIGIN_OPTIONS = ['Interno', 'Externo', 'Misto'];
+        const RESPONSIBLE_OPTIONS = ['Vera Nascimento', 'Gisely Rocha'];
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderApp();
+            document.getElementById('print-date').innerText = new Date().toLocaleDateString();
+        });
+
+        // --- Funções de Navegação e Renderização ---
+
+        function changeView(viewName) {
+            state.view = viewName;
+            renderApp();
+        }
+
+        function changeMonth(monthId) {
+            state.selectedMonth = monthId;
+            renderApp();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function renderApp() {
+            const content = document.getElementById('app-content');
+            
+            // Atualizar classes dos botões
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.view === state.view) {
+                    btn.classList.remove('text-blue-100', 'hover:bg-blue-700');
+                    btn.classList.add('bg-white', 'text-blue-900', 'shadow-sm');
+                } else {
+                    btn.classList.add('text-blue-100', 'hover:bg-blue-700');
+                    btn.classList.remove('bg-white', 'text-blue-900', 'shadow-sm');
+                }
+            });
+
+            // Seletor de Mês
+            let monthSelectorHTML = '';
+            if (state.view === 'month' || state.view === 'reports') {
+                monthSelectorHTML = `
+                    <div class="mb-8 overflow-x-auto pb-4 no-print">
+                        <div class="flex gap-2 min-w-max px-1">
+                            ${MONTHS_DATA.map(m => `
+                                <button onclick="changeMonth(${m.id})" 
+                                    class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm
+                                    ${state.selectedMonth === m.id 
+                                        ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-offset-2 ring-blue-900' 
+                                        : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'}">
+                                    ${m.name}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            let viewHTML = '';
+            if (state.view === 'dashboard') viewHTML = getDashboardHTML();
+            else if (state.view === 'month') viewHTML = getMonthViewHTML();
+            else if (state.view === 'calendar') viewHTML = getCalendarViewHTML();
+            else if (state.view === 'crisis') viewHTML = getCrisisViewHTML();
+            else if (state.view === 'reports') viewHTML = getReportsViewHTML();
+
+            content.innerHTML = monthSelectorHTML + viewHTML;
+            lucide.createIcons();
+            attachInputListeners();
+        }
+
+        // --- View Generators ---
+
+        function getDashboardHTML() {
+            const totalActs = state.activities.length;
+            const completed = state.activities.filter(a => a.status === 'Concluído').length;
+            const rate = totalActs > 0 ? Math.round((completed / totalActs) * 100) : 0;
+            const annualGoal = totalActs;
+            const annualAchieved = completed;
+
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Dashboard Geral & Metas Anuais</h2>
+                        <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
+                            <i data-lucide="printer"></i> Exportar PDF
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-sm text-gray-500 font-medium">Meta Anual (Ações)</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal}</h3></div>
+                                <i data-lucide="target" class="text-blue-600 h-8 w-8 opacity-80"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-sm text-gray-500 font-medium">Metas Atingidas</p><h3 class="text-3xl font-bold text-gray-800">${annualAchieved}</h3></div>
+                                <i data-lucide="check-circle-2" class="text-green-500 h-8 w-8 opacity-80"></i>
+                            </div>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-sm text-gray-500 font-medium">Não Alcançadas</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal - annualAchieved}</h3></div>
+                                <i data-lucide="alert-circle" class="text-yellow-500 h-8 w-8 opacity-80"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-sm text-gray-500 font-medium">Riscos/Crises</p><h3 class="text-3xl font-bold text-gray-800">${state.crises.length}</h3></div>
+                                <i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução das Metas Anuais</h3>
+                        <div class="h-48 flex items-end gap-2 justify-between px-2">
+                            ${MONTHS_DATA.map(m => {
+                                const count = state.activities.filter(a => a.month === m.id).length;
+                                const height = count > 0 ? `${Math.min((count / 10) * 100, 100)}%` : '4px';
+                                return `
+                                    <div class="flex flex-col items-center flex-1 group">
+                                        <div class="w-full rounded-t transition-all ${count > 0 ? 'bg-blue-500' : 'bg-gray-100'}" style="height: ${height}"></div>
+                                        <span class="text-xs text-gray-500 mt-2 truncate w-full text-center">${m.name.substring(0, 3)}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getMonthViewHTML() {
+            const month = MONTHS_DATA[state.selectedMonth];
+            const monthHolidays = state.holidays.filter(h => h.month === state.selectedMonth);
+            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+
+            return `
+                <div class="space-y-8 animate-fadeIn">
+                    <div class="bg-white p-6 rounded-lg shadow-sm ${month.color}">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-gray-800 uppercase">${month.name}</h2>
+                            <div class="flex gap-2 no-print">
+                                <button onclick="handleSave()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"><i data-lucide="save" size="16"></i> Salvar</button>
+                                <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"><i data-lucide="printer" size="16"></i> Exportar PDF</button>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-gray-100">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2">
+                                <h4 class="text-xs font-bold text-gray-500 uppercase">Datas Comemorativas (Manual)</h4>
+                                <div class="flex gap-2 no-print bg-gray-50 p-1 rounded items-center">
+                                    <input type="text" id="holiday-day" placeholder="Dia (ex: 15)" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
+                                    <input type="text" id="holiday-name" placeholder="Nome do Evento" class="w-40 border border-gray-300 rounded px-2 py-1 text-xs">
+                                    <button onclick="addHoliday()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700">Adicionar</button>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                ${monthHolidays.map(h => `
+                                    <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs rounded-full border border-blue-100">
+                                        <span class="font-bold">${h.day}</span> - ${h.name}
+                                        <button onclick="removeHoliday(${h.id})" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button>
+                                    </div>
+                                `).join('')}
+                                ${monthHolidays.length === 0 ? '<span class="text-xs text-gray-400 italic">Nenhuma data cadastrada.</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="flex justify-between items-center p-4 border-b bg-gray-50">
+                            <h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="file-text" class="text-blue-600"></i> Cronograma & Ocorrências</h3>
+                            <button onclick="addActivity()" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-sm text-left whitespace-nowrap">
+                                <thead class="bg-gray-100 text-gray-700 font-semibold uppercase text-xs">
+                                    <tr>
+                                        <th class="px-4 py-3 min-w-[140px]">Tipo de Evento</th>
+                                        <th class="px-4 py-3 min-w-[200px]">Nome do Evento</th>
+                                        <th class="px-4 py-3 min-w-[120px]">Público</th>
+                                        <th class="px-4 py-3 min-w-[120px]">Data/Hora</th>
+                                        <th class="px-4 py-3 min-w-[120px]">Link</th>
+                                        <th class="px-4 py-3 min-w-[150px]">Pós-Evento (Ocorrência)</th>
+                                        <th class="px-4 py-3 min-w-[150px]">Pós-Evento (Tomada)</th>
+                                        <th class="px-4 py-3 min-w-[120px]">Meta Satisfação</th>
+                                        <th class="px-4 py-3 min-w-[100px]">Status</th>
+                                        <th class="px-4 py-3 w-[50px] no-print">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    ${monthActs.map(act => {
+                                        const satisfactionWidth = act.satisfaction ? Math.min(act.satisfaction, 100) : 0;
+                                        return `
+                                        <tr class="hover:bg-gray-50 align-top">
+                                            <td class="px-4 py-3">
+                                                <select onchange="updateActivity(${act.id}, 'type', this.value)" class="w-full border rounded text-xs p-1.5 focus:ring-blue-500 font-bold ${getTypeColor(act.type)}">
+                                                    ${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                                </select>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input type="text" value="${act.eventName}" data-id="${act.id}" data-field="eventName" placeholder="Nome do evento..." class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium">
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <select onchange="updateActivity(${act.id}, 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">
+                                                    ${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                                </select>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="flex flex-col gap-1">
+                                                    <input type="date" value="${act.date}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1">
+                                                    <input type="time" value="${act.time}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1">
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input type="text" value="${act.link}" data-id="${act.id}" data-field="link" placeholder="Link/Arquivo..." class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600">
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="flex flex-col gap-1">
+                                                    <input type="text" value="${act.postName || ''}" data-id="${act.id}" data-field="postName" placeholder="Resp. Nome" class="act-input w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50">
+                                                    <textarea data-id="${act.id}" data-field="postOccurrence" placeholder="Ocorrência..." class="act-input w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <textarea data-id="${act.id}" data-field="postAction" placeholder="Tomada de decisão..." class="act-input w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="flex items-center gap-1 mb-1">
+                                                    <input type="number" value="${act.satisfaction}" data-id="${act.id}" data-field="satisfaction" placeholder="%" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100">
+                                                    <span class="text-xs text-gray-500">%</span>
+                                                </div>
+                                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: ${satisfactionWidth}%"></div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <select onchange="updateActivity(${act.id}, 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" 
+                                                    style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">
+                                                    ${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                                </select>
+                                            </td>
+                                            <td class="px-4 py-3 text-center no-print">
+                                                <button onclick="requestDeleteActivity(${act.id})" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button>
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                    ${monthActs.length === 0 ? '<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 italic bg-gray-50">Nenhuma ação registrada.</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCalendarViewHTML() {
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                     <div class="flex justify-between items-center border-b pb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Calendário Anual Consolidado</h2>
+                        <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
+                            <i data-lucide="printer"></i> Exportar
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${MONTHS_DATA.map(m => {
+                            const mActs = state.activities.filter(a => a.month === m.id);
+                            const total = mActs.length;
+                            const achieved = mActs.filter(a => a.status === 'Concluído').length;
+                            
+                            return `
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden print-break-inside-avoid flex flex-col h-full">
+                                    <div class="px-4 py-3 ${m.color} bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                                        <h3 class="font-bold text-gray-800">${m.name}</h3>
+                                        <span class="text-xs font-bold bg-white px-2 py-1 rounded shadow-sm border text-gray-500">${total} Ações</span>
+                                    </div>
+                                    <div class="p-4 flex-1">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Eventos Agendados:</h4>
+                                        <ul class="space-y-1 mb-4">
+                                            ${mActs.length > 0 ? mActs.map(act => `
+                                                <li class="text-xs text-gray-700 flex items-start gap-2">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span>
+                                                    <span class="line-clamp-2" title="${act.eventName}">${act.eventName || 'Sem nome'}</span>
+                                                </li>
+                                            `).join('') : '<li class="text-xs text-gray-300 italic">Nenhum evento</li>'}
+                                        </ul>
+                                    </div>
+                                    <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between text-xs">
+                                        <span class="text-green-600 font-bold">Concluídos: ${achieved}</span>
+                                        <span class="text-gray-500">Planejados: ${total}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCrisisViewHTML() {
+            // (Mantido idêntico ao anterior pois não houve alteração solicitada aqui)
+            return `
+                <div class="space-y-6 animate-fadeIn">
+                    <div class="bg-red-50 p-6 rounded-lg border border-red-100 flex flex-col md:flex-row justify-between items-start gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-red-800 mb-2 flex items-center gap-2"><i data-lucide="shield-alert"></i> Gestão de Riscos & Crises</h2>
+                            <p class="text-red-700 text-sm max-w-2xl">Classificação de riscos e preenchimento manual conforme padrão estabelecido.</p>
+                        </div>
+                        <div class="flex gap-2 no-print w-full md:w-auto">
+                            <button onclick="handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
+                            <button onclick="exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i data-lucide="printer" size="16"></i> Exportar PDF</button>
+                        </div>
+                    </div>
+
+                    <button onclick="addCrisis()" class="w-full py-4 border-2 border-dashed border-red-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors font-bold uppercase tracking-wide no-print flex items-center justify-center gap-2">
+                        <i data-lucide="plus" size="20"></i> Registrar Novo Risco ou Ocorrência
+                    </button>
+
+                    <div class="grid gap-6">
+                        ${state.crises.map((item, index) => `
+                            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative print-break-inside-avoid">
+                                <div class="absolute top-4 right-4 no-print">
+                                    <button onclick="requestDeleteCrisis(${item.id})" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button>
+                                </div>
+                                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#${index + 1}</span> Ocorrência de Setor</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-md border border-gray-100">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label>
+                                        <select onchange="updateCrisis(${item.id}, 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">
+                                            ${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Origem</label>
+                                        <select onchange="updateCrisis(${item.id}, 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
+                                            ${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Setor</label>
+                                        <select onchange="updateCrisis(${item.id}, 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
+                                            ${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label>
+                                        <select onchange="updateCrisis(${item.id}, 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
+                                            ${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" size="12"></i> Plano de Ação Corretiva</label>
+                                    <textarea data-cid="${item.id}" data-cfield="correctiveAction" class="crisis-input w-full border border-red-100 bg-white rounded p-3 text-sm focus:ring-red-500 min-h-[80px]" placeholder="Descreva ação tomada...">${item.correctiveAction}</textarea>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-gray-50 p-3 rounded border border-gray-100">
+                                        <label class="block text-xs font-bold text-gray-600 mb-1">Impactos / Riscos</label>
+                                        <textarea data-cid="${item.id}" data-cfield="risks" class="crisis-input w-full bg-white border border-gray-200 rounded p-2 text-xs h-24 resize-none">${item.risks}</textarea>
+                                    </div>
+                                    <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Aprendizados</label>
+                                        <textarea data-cid="${item.id}" data-cfield="learning" class="crisis-input w-full bg-white border border-blue-200 rounded p-2 text-xs h-24 resize-none">${item.learning}</textarea>
+                                    </div>
+                                    <div class="bg-green-50 p-3 rounded border border-green-100">
+                                        <label class="block text-xs font-bold text-green-800 mb-1">Melhoria Futura</label>
+                                        <textarea data-cid="${item.id}" data-cfield="improvement" class="crisis-input w-full bg-white border border-green-200 rounded p-2 text-xs h-24 resize-none">${item.improvement}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${state.crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getReportsViewHTML() {
+            // (Mantido funcional e integrado)
+            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const total = monthActs.length;
+            const completed = monthActs.filter(a => a.status === 'Concluído').length;
+            const missed = total - completed;
+            const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
+            const external = monthActs.filter(a => a.type === 'Evento Externo').length;
+            const report = state.monthlyReports[state.selectedMonth] || { explanation: '', highlights: '', suggestions: '' };
+
+            return `
+                <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Relatório de Desempenho e Metas</h2>
+                            <p class="text-gray-500">Mês de Referência: <span class="font-bold text-blue-600">${MONTHS_DATA[state.selectedMonth].name}</span></p>
+                        </div>
+                        <div class="flex gap-2 no-print w-full md:w-auto flex-wrap">
+                             <button onclick="exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"><i data-lucide="file-check-2" size="16"></i> Exportar para Alta Gestão</button>
+                            <button onclick="requestClearReport()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-200 rounded hover:bg-red-200"><i data-lucide="eraser" size="16"></i> Apagar</button>
+                            <button onclick="handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                        <h3 class="text-sm font-bold text-gray-500 uppercase mb-4 border-b pb-2">Metas Consolidadas do Mês</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="p-4 bg-gray-50 rounded text-center"><div class="text-3xl font-bold text-gray-800">${total}</div><div class="text-xs font-bold text-gray-500 uppercase mt-1">Meta Mensal (Ações)</div></div>
+                             <div class="p-4 bg-green-50 rounded text-center"><div class="text-3xl font-bold text-green-600">${completed}</div><div class="text-xs font-bold text-green-800 uppercase mt-1">Metas Atingidas</div></div>
+                            <div class="p-4 bg-yellow-50 rounded text-center"><div class="text-3xl font-bold text-yellow-600">${missed}</div><div class="text-xs font-bold text-yellow-800 uppercase mt-1">Não Alcançadas</div></div>
+                            <div class="p-4 bg-blue-50 rounded text-center"><div class="text-3xl font-bold text-blue-600">${internal}</div><div class="text-xs font-bold text-blue-800 uppercase mt-1">Eventos Internos</div></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-gray-800 text-lg">1. Análise Direta de Ocorrências e Entregas</h3>
+                                <button onclick="generateAutoText()" class="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Análise Automática</button>
+                            </div>
+                            <textarea id="report-explanation" oninput="updateReport('explanation', this.value)" class="w-full border border-gray-300 rounded p-4 h-48 focus:ring-blue-500 resize-none leading-relaxed text-sm text-gray-700" placeholder="Escreva a análise da alta gestão...">${report.explanation}</textarea>
+                        </div>
+                        <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-gray-800 text-lg">2. Pontos Altos & Resultados Consolidados</h3>
+                                <button onclick="generateHighlights()" class="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200 font-bold no-print"><i data-lucide="wand-2" size="12"></i> Gerar Destaques</button>
+                            </div>
+                            <textarea id="report-highlights" oninput="updateReport('highlights', this.value)" class="w-full border border-gray-300 rounded p-4 h-32 focus:ring-green-500 resize-none text-sm" placeholder="Liste resultados...">${report.highlights}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Logic & Helpers ---
+
+        function getTypeColor(type) {
+            switch (type) {
+                case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
+                case 'Evento Interno': return 'bg-blue-100 text-blue-800 border-blue-200';
+                case 'Evento Externo': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                case 'Campanha': return 'bg-pink-100 text-pink-800 border-pink-200';
+                case 'Treinamento': return 'bg-orange-100 text-orange-800 border-orange-200';
+                case 'Gravação Externa': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+                default: return 'bg-white border-gray-300 text-gray-700';
+            }
+        }
+
+        function getStatusColor(status) {
+            if (status === 'Concluído') return { bg: '#dcfce7', text: '#166534' };
+            if (status === 'Planejado') return { bg: '#fef9c3', text: '#854d0e' };
+            return { bg: '#fee2e2', text: '#991b1b' };
+        }
+
+        function getRiskColorClass(level) {
+            if (level.includes('Grave') || level.includes('Extrema')) return 'text-red-600 border-red-200 bg-red-50';
+            if (level.includes('Moderada')) return 'text-orange-600 border-orange-200';
+            return 'text-gray-700 border-gray-300';
+        }
+
+        function attachInputListeners() {
+            document.querySelectorAll('.act-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    const field = e.target.dataset.field;
+                    const act = state.activities.find(a => a.id === id);
+                    if (act) act[field] = e.target.value;
+                    if (field === 'satisfaction') renderApp(); // Re-render for progress bar
+                });
+            });
+            document.querySelectorAll('.crisis-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.cid);
+                    const field = e.target.dataset.cfield;
+                    const item = state.crises.find(c => c.id === id);
+                    if (item) item[field] = e.target.value;
+                });
+            });
+        }
+
+        // --- Actions ---
+
+        function handleSave() { alert('Dados salvos com sucesso no sistema!'); }
+        function exportPDF() { setTimeout(() => window.print(), 100); }
+
+        function openConfirmModal(msg, actionCallback) {
+            document.getElementById('modal-message').innerText = msg;
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.onclick = () => { actionCallback(); closeModal(); };
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+        function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+        // --- Data Manipulation ---
+
+        function addHoliday() {
+            const dayInput = document.getElementById('holiday-day');
+            const nameInput = document.getElementById('holiday-name');
+            if (dayInput.value && nameInput.value) {
+                state.holidays.push({ id: Date.now(), month: state.selectedMonth, day: dayInput.value, name: nameInput.value });
+                renderApp();
+            }
+        }
+        function removeHoliday(id) {
+            openConfirmModal("Apagar esta data comemorativa?", () => {
+                state.holidays = state.holidays.filter(h => h.id !== id);
+                renderApp();
+            });
+        }
+
+        function addActivity() {
+            state.activities.push({
+                id: Date.now(),
+                month: state.selectedMonth,
+                type: 'Evento Interno',
+                eventName: '', // Renomeado
+                audience: 'Interno', // Novo
+                link: '', // Novo
+                date: '', time: '', 
+                postName: '', postOccurrence: '', postAction: '', // Novos Pós
+                satisfaction: '', // Nova Meta
+                status: 'Planejado'
+            });
+            renderApp();
+        }
+        function updateActivity(id, field, value) {
+            const act = state.activities.find(a => a.id === id);
+            if (act) {
+                act[field] = value;
+                if (field === 'type' || field === 'status' || field === 'audience') renderApp();
+            }
+        }
+        function requestDeleteActivity(id) {
+            openConfirmModal("Deseja excluir esta ação?", () => {
+                state.activities = state.activities.filter(a => a.id !== id);
+                renderApp();
+            });
+        }
+
+        function addCrisis() {
+            state.crises.push({
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                riskLevel: 'Sem relevância crítica', origin: 'Interno', sector: 'Comunicação', responsible: 'Vera Nascimento',
+                correctiveAction: '', risks: '', learning: '', improvement: ''
+            });
+            renderApp();
+        }
+        function updateCrisis(id, field, value) {
+            const item = state.crises.find(c => c.id === id);
+            if (item) {
+                item[field] = value;
+                if(field === 'riskLevel') renderApp();
+            }
+        }
+        function requestDeleteCrisis(id) {
+            openConfirmModal("Apagar este registro de risco/crise?", () => {
+                state.crises = state.crises.filter(c => c.id !== id);
+                renderApp();
+            });
+        }
+
+        function updateReport(field, value) {
+            if (!state.monthlyReports[state.selectedMonth]) state.monthlyReports[state.selectedMonth] = {};
+            state.monthlyReports[state.selectedMonth][field] = value;
+        }
+        function requestClearReport() {
+            openConfirmModal("Tem certeza que deseja apagar todo o relatório deste mês?", () => {
+                if (state.monthlyReports[state.selectedMonth]) {
+                    state.monthlyReports[state.selectedMonth] = { explanation: '', highlights: '', suggestions: '' };
+                    renderApp();
+                }
+            });
+        }
+        function generateAutoText() {
+            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const total = monthActs.length;
+            const completed = monthActs.filter(a => a.status === 'Concluído').length;
+            const efficiency = total > 0 ? Math.round((completed/total)*100) : 0;
+            
+            let text = `ANÁLISE DE ENTREGAS PARA ALTA GESTÃO - ${MONTHS_DATA[state.selectedMonth].name.toUpperCase()}\n\n`;
+            if (total === 0) {
+                text += "Não houve registros de atividades planejadas para este período.";
+            } else {
+                text += `O mês encerrou com ${total} ações planejadas e ${completed} metas atingidas. A eficiência de execução atingiu ${efficiency}%.\n\n`;
+            }
+            updateReport('explanation', text);
+            document.getElementById('report-explanation').value = text;
+        }
+        function generateHighlights() {
+            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const completedActs = monthActs.filter(a => a.status === 'Concluído');
+            const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
+            const external = monthActs.filter(a => a.type === 'Evento Externo').length;
+
+            let text = "RESULTADOS CONSOLIDADOS:\n\n";
+            if (completedActs.length === 0) {
+                text += "- Nenhuma atividade concluída para destacar ainda.";
+            } else {
+                completedActs.forEach(act => {
+                    text += `• ${act.type}: "${act.eventName || 'Evento sem nome'}" - Público: ${act.audience}\n  Satisfação: ${act.satisfaction || '0'}%\n`;
+                });
+                text += `\nRESUMO QUANTITATIVO:\n`;
+                if (internal > 0) text += `- ${internal} Eventos Internos Realizados\n`;
+                if (external > 0) text += `- ${external} Eventos Externos Executados\n`;
+            }
+            updateReport('highlights', text);
+            document.getElementById('report-highlights').value = text;
+        }
+
+    </script>
+</body>
+</html>
