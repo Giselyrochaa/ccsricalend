@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -12,6 +11,153 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Configuração do Firebase
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+        
+        // Inicialização
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Estado Global Reativo
+        window.state = {
+            view: 'dashboard',
+            selectedMonth: 0,
+            mobileMenuOpen: false,
+            user: null,
+            activities: [],
+            crises: [],
+            notifications: [],
+            monthlyReports: {},
+            holidays: [] 
+        };
+
+        // --- Autenticação e Listeners em Tempo Real ---
+        
+        async function initAuth() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        }
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.state.user = user;
+                setupRealtimeListeners();
+            }
+        });
+
+        function setupRealtimeListeners() {
+            // Listener: Atividades
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), (snapshot) => {
+                window.state.activities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderApp();
+            }, (error) => console.error("Erro atividades:", error));
+
+            // Listener: Crises
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), (snapshot) => {
+                window.state.crises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderApp();
+            }, (error) => console.error("Erro crises:", error));
+
+            // Listener: Notificações
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), (snapshot) => {
+                window.state.notifications = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                renderApp();
+            }, (error) => console.error("Erro notificacoes:", error));
+
+            // Listener: Relatórios
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), (snapshot) => {
+                const reportsObj = {};
+                snapshot.docs.forEach(doc => {
+                    reportsObj[doc.id] = doc.data();
+                });
+                window.state.monthlyReports = reportsObj;
+                renderApp();
+            }, (error) => console.error("Erro relatorios:", error));
+
+             // Listener: Feriados
+             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), (snapshot) => {
+                window.state.holidays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (window.state.holidays.length === 0) {
+                    addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), { month: 0, day: '01', name: 'Confraternização Universal' });
+                }
+                renderApp();
+            }, (error) => console.error("Erro feriados:", error));
+        }
+
+        // --- Funções de Banco de Dados (CRUD) ---
+
+        // Atividades
+        window.dbAddActivity = async (activity) => {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), activity);
+        };
+        window.dbUpdateActivity = async (id, field, value) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activities', id);
+            await updateDoc(docRef, { [field]: value });
+        };
+        window.dbDeleteActivity = async (id) => {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id));
+        };
+
+        // Crises
+        window.dbAddCrisis = async (crisis) => {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), crisis);
+        };
+        window.dbUpdateCrisis = async (id, field, value) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'crises', id);
+            await updateDoc(docRef, { [field]: value });
+        };
+        window.dbDeleteCrisis = async (id) => {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id));
+        };
+
+        // Notificações
+        window.dbAddNotification = async (text) => {
+            const notif = {
+                text,
+                timestamp: new Date().toISOString(),
+                authorId: auth.currentUser.uid
+            };
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), notif);
+        };
+        window.dbDeleteNotification = async (id) => {
+             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+        };
+
+        // Relatórios
+        window.dbUpdateReport = async (monthId, field, value) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString());
+            await setDoc(docRef, { [field]: value }, { merge: true });
+        };
+        window.dbClearReport = async (monthId) => {
+             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString());
+             await setDoc(docRef, { explanation: '', highlights: '', suggestions: '' });
+        };
+
+        // Feriados
+        window.dbAddHoliday = async (holiday) => {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), holiday);
+        };
+        window.dbDeleteHoliday = async (id) => {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
+        };
+
+    </script>
+
     <!-- Fontes e Estilos Globais -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -22,7 +168,6 @@
             color: #0f172a; /* slate-900 */
         }
 
-        /* Animações */
         .animate-fadeIn {
             animation: fadeIn 0.3s ease-out;
         }
@@ -32,46 +177,33 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Ajustes de Impressão Otimizados para Retrato/Uma Folha */
         @media print {
             @page { 
                 margin: 0.5cm; 
-                size: portrait; /* Mudança para Retrato */
+                size: portrait; 
             }
-            
             body { 
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact; 
                 background-color: white;
-                /* Escala para caber na folha */
                 font-size: 11px; 
             }
-
-            /* Container principal ajustado para largura da página */
             #app-content {
                 width: 100% !important;
                 max-width: none !important;
                 padding: 0 !important;
                 margin: 0 !important;
             }
-
-            /* Esconder elementos de navegação e botões de ação */
             .no-print { display: none !important; }
             .print-break-inside-avoid { break-inside: avoid; }
-            
-            /* Ajustes de Tabela para Impressão */
             table { font-size: 10px; width: 100%; }
             th, td { padding: 4px !important; }
-            
-            /* Ajuste de inputs para parecerem texto na impressão */
             input, select, textarea {
                 border: none !important;
                 background: transparent !important;
                 padding: 0 !important;
                 resize: none; 
             }
-
-            /* Forçar cores de fundo */
             .bg-blue-100 { background-color: #dbeafe !important; }
             .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
             .bg-green-100 { background-color: #dcfce7 !important; }
@@ -80,32 +212,20 @@
             .bg-purple-100 { background-color: #f3e8ff !important; }
         }
 
-        /* Modal Overlay */
-        #modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-        }
+        #modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
         
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 4px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
 
-        /* Estilos específicos para Botões de Navegação Ativos */
         .nav-btn-active {
             background-color: #ffffff !important;
-            color: #1e3a8a !important; /* blue-900 */
+            color: #1e3a8a !important;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             font-weight: 700;
         }
-        .nav-btn-inactive {
-            color: #dbeafe !important; /* blue-100 */
-        }
+        .nav-btn-inactive { color: #dbeafe !important; }
         .nav-btn-inactive:hover {
-            background-color: #1d4ed8 !important; /* blue-700 */
+            background-color: #1d4ed8 !important;
             color: #ffffff !important;
         }
     </style>
@@ -146,13 +266,11 @@
                 <button onclick="changeView('crisis')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="crisis">Riscos & Crises</button>
             </nav>
 
-            <!-- Mobile Menu Toggle -->
             <button class="md:hidden p-2 text-white hover:bg-blue-800 rounded" onclick="toggleMobileMenu()">
                 <i data-lucide="menu"></i>
             </button>
         </div>
 
-        <!-- Mobile Nav -->
         <div id="mobile-menu" class="hidden md:hidden bg-blue-800 px-4 py-2 space-y-2 border-t border-blue-700">
             <button onclick="changeView('dashboard'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Dashboard</button>
             <button onclick="changeView('month'); toggleMobileMenu()" class="block w-full text-left py-3 text-white border-b border-blue-700 font-medium">Ações do Mês</button>
@@ -164,28 +282,19 @@
 
     <!-- Main Content -->
     <main id="app-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- O conteúdo será injetado aqui pelo JavaScript -->
+        <div id="loading" class="text-center py-20 text-gray-500">
+            <p class="animate-pulse">Carregando dados em tempo real...</p>
+        </div>
     </main>
 
-    <!-- Footer Impressão -->
+    <!-- Footer -->
     <footer class="hidden print:block text-center text-xs text-gray-400 mt-12 border-t pt-4 fixed bottom-0 w-full bg-white pb-4">
         <p class="uppercase font-bold tracking-wider">Assessoria de Comunicação Evereste - Relatório Oficial</p>
         <p>Documento gerado em <span id="print-date"></span></p>
     </footer>
 
-    <!-- Scripts da Aplicação -->
+    <!-- Lógica da Aplicação -->
     <script>
-        // --- Estado Global ---
-        const state = {
-            view: 'dashboard',
-            selectedMonth: 0,
-            mobileMenuOpen: false,
-            activities: [], 
-            holidays: [{ id: 1, month: 0, day: '01', name: 'Confraternização Universal' }],
-            crises: [],
-            monthlyReports: {}
-        };
-
         // --- Constantes ---
         const MONTHS_DATA = [
             { id: 0, name: 'Janeiro', color: 'border-l-4 border-gray-200' },
@@ -209,51 +318,49 @@
         const ORIGIN_OPTIONS = ['Interno', 'Externo', 'Misto'];
         const RESPONSIBLE_OPTIONS = ['Vera Nascimento', 'Gisely Rocha'];
 
-        // --- Inicialização ---
+        // --- Inicialização DOM ---
         document.addEventListener('DOMContentLoaded', () => {
-            renderApp();
             document.getElementById('print-date').innerText = new Date().toLocaleDateString();
         });
 
-        // --- Funções de Navegação e Renderização ---
-
+        // --- Navegação ---
         function changeView(viewName) {
-            state.view = viewName;
+            window.state.view = viewName;
             renderApp();
         }
 
         function changeMonth(monthId) {
-            state.selectedMonth = monthId;
+            window.state.selectedMonth = monthId;
             renderApp();
         }
 
         function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
+            document.getElementById('mobile-menu').classList.toggle('hidden');
         }
 
+        // --- Renderização Principal ---
         function renderApp() {
+            if (!window.state.user) return; 
+
             const content = document.getElementById('app-content');
             
-            // Lógica corrigida para os botões de navegação
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.dataset.view === state.view) {
+                if (btn.dataset.view === window.state.view) {
                     btn.className = 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all';
                 } else {
                     btn.className = 'nav-btn nav-btn-inactive px-4 py-2 rounded-md text-sm font-medium transition-all';
                 }
             });
 
-            // Seletor de Mês
             let monthSelectorHTML = '';
-            if (state.view === 'month' || state.view === 'reports') {
+            if (window.state.view === 'month' || window.state.view === 'reports') {
                 monthSelectorHTML = `
                     <div class="mb-8 overflow-x-auto pb-4 no-print">
                         <div class="flex gap-2 min-w-max px-1">
                             ${MONTHS_DATA.map(m => `
                                 <button onclick="changeMonth(${m.id})" 
                                     class="px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm
-                                    ${state.selectedMonth === m.id 
+                                    ${window.state.selectedMonth === m.id 
                                         ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-offset-2 ring-blue-900' 
                                         : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 hover:border-gray-300'}">
                                     ${m.name}
@@ -265,36 +372,82 @@
             }
 
             let viewHTML = '';
-            if (state.view === 'dashboard') viewHTML = getDashboardHTML();
-            else if (state.view === 'month') viewHTML = getMonthViewHTML();
-            else if (state.view === 'calendar') viewHTML = getCalendarViewHTML();
-            else if (state.view === 'crisis') viewHTML = getCrisisViewHTML();
-            else if (state.view === 'reports') viewHTML = getReportsViewHTML();
+            if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
+            else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
+            else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
+            else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
+            else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
 
             content.innerHTML = monthSelectorHTML + viewHTML;
             lucide.createIcons();
             attachInputListeners();
         }
 
-        // --- View Generators ---
+        // --- Views ---
 
         function getDashboardHTML() {
-            const totalActs = state.activities.length;
-            const completed = state.activities.filter(a => a.status === 'Concluído').length;
-            const rate = totalActs > 0 ? Math.round((completed / totalActs) * 100) : 0;
-            const annualGoal = totalActs;
-            const annualAchieved = completed;
+            const activities = window.state.activities;
+            const totalActs = activities.length;
+            const completedActs = activities.filter(a => a.status === 'Concluído');
+            const annualAchieved = completedActs.length;
+            const annualGoal = totalActs; 
+            
+            // Média Real Geral (Anual)
+            const ratedEvents = completedActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
+            const totalSatisfaction = ratedEvents.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
+            const averageSatisfaction = ratedEvents.length > 0 ? Math.round(totalSatisfaction / ratedEvents.length) : 0;
+
+            // TOP EVENTOS (Novo: Calcula os 5 melhores avaliados)
+            const topEvents = activities
+                .filter(a => a.status === 'Concluído' && a.satisfaction && !isNaN(parseFloat(a.satisfaction)))
+                .sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction))
+                .slice(0, 5);
+
+            const topEventsHTML = topEvents.map((evt, idx) => `
+                <div class="flex items-center justify-between p-3 bg-white border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 font-bold rounded-full text-xs">${idx + 1}º</div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">${evt.eventName || 'Evento sem nome'}</p>
+                            <p class="text-[10px] text-gray-500">${evt.type} • ${new Date(evt.date).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-green-700 font-bold text-xs">
+                        ${evt.satisfaction}% <i data-lucide="star" size="12"></i>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-xs text-gray-400 italic text-center py-4">Nenhum evento avaliado ainda.</p>';
+
+            const notificationsHTML = window.state.notifications.map(n => `
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-2 rounded shadow-sm flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-yellow-800 font-medium">${n.text}</p>
+                        <p class="text-[10px] text-yellow-600 mt-1">${new Date(n.timestamp).toLocaleString()}</p>
+                    </div>
+                    <button onclick="deleteNotification('${n.id}')" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button>
+                </div>
+            `).join('');
 
             return `
                 <div class="space-y-6 animate-fadeIn">
                     <div class="flex justify-between items-center border-b pb-4">
-                        <h2 class="text-2xl font-bold text-gray-800">Dashboard Geral & Metas Anuais</h2>
+                        <h2 class="text-2xl font-bold text-gray-800">Dashboard Geral & Metas em Tempo Real</h2>
                         <button onclick="exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm">
                             <i data-lucide="printer"></i> Exportar PDF
                         </button>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-indigo-500">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-sm text-gray-500 font-medium">Média Real (Anual)</p><h3 class="text-3xl font-bold text-indigo-700">${averageSatisfaction}%</h3></div>
+                                <i data-lucide="star" class="text-indigo-500 h-8 w-8 opacity-80"></i>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                <div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${averageSatisfaction}%"></div>
+                            </div>
+                        </div>
+
                         <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600">
                             <div class="flex justify-between items-center">
                                 <div><p class="text-sm text-gray-500 font-medium">Meta Anual (Ações)</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal}</h3></div>
@@ -307,34 +460,51 @@
                                 <i data-lucide="check-circle-2" class="text-green-500 h-8 w-8 opacity-80"></i>
                             </div>
                         </div>
-                         <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-sm text-gray-500 font-medium">Não Alcançadas</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal - annualAchieved}</h3></div>
-                                <i data-lucide="alert-circle" class="text-yellow-500 h-8 w-8 opacity-80"></i>
-                            </div>
-                        </div>
                         <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
                             <div class="flex justify-between items-center">
-                                <div><p class="text-sm text-gray-500 font-medium">Riscos/Crises</p><h3 class="text-3xl font-bold text-gray-800">${state.crises.length}</h3></div>
+                                <div><p class="text-sm text-gray-500 font-medium">Riscos/Crises</p><h3 class="text-3xl font-bold text-gray-800">${window.state.crises.length}</h3></div>
                                 <i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução das Metas Anuais</h3>
-                        <div class="h-48 flex items-end gap-2 justify-between px-2">
-                            ${MONTHS_DATA.map(m => {
-                                const count = state.activities.filter(a => a.month === m.id).length;
-                                const height = count > 0 ? `${Math.min((count / 15) * 100, 100)}%` : '4px'; // Ajuste de escala
-                                return `
-                                    <div class="flex flex-col items-center flex-1 group relative">
-                                        <span class="text-xs font-bold text-blue-600 mb-1 opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full">${count}</span>
-                                        <div class="w-full rounded-t transition-all duration-500 ${count > 0 ? 'bg-blue-500' : 'bg-gray-100'}" style="height: ${height}"></div>
-                                        <span class="text-xs text-gray-500 mt-2 truncate w-full text-center">${m.name.substring(0, 3)}</span>
-                                    </div>
-                                `;
-                            }).join('')}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Evolução Anual -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução Anual</h3>
+                            <div class="h-48 flex items-end gap-2 justify-between px-2">
+                                ${MONTHS_DATA.map(m => {
+                                    const count = activities.filter(a => a.month === m.id).length;
+                                    const height = count > 0 ? `${Math.min((count / 15) * 100, 100)}%` : '4px';
+                                    return `
+                                        <div class="flex flex-col items-center flex-1 group relative">
+                                            <span class="text-xs font-bold text-blue-600 mb-1 opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full">${count}</span>
+                                            <div class="w-full rounded-t transition-all duration-500 ${count > 0 ? 'bg-blue-500' : 'bg-gray-100'}" style="height: ${height}"></div>
+                                            <span class="text-xs text-gray-500 mt-2 truncate w-full text-center">${m.name.substring(0, 3)}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Top Eventos (NOVO) -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Top Eventos do Ano</h3>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">
+                                ${topEventsHTML}
+                            </div>
+                        </div>
+
+                        <!-- Mural de Notificações -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-yellow-500"></i> Mural de Avisos</h3>
+                            <div class="flex gap-2 mb-4">
+                                <input type="text" id="new-notification" placeholder="Novo aviso..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm">
+                                <button onclick="addNotification()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button>
+                            </div>
+                            <div class="overflow-y-auto flex-1 custom-scrollbar max-h-[200px]">
+                                ${notificationsHTML || '<p class="text-xs text-gray-400 italic text-center mt-4">Nenhuma notificação registrada.</p>'}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -342,9 +512,9 @@
         }
 
         function getMonthViewHTML() {
-            const month = MONTHS_DATA[state.selectedMonth];
-            const monthHolidays = state.holidays.filter(h => h.month === state.selectedMonth);
-            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const month = MONTHS_DATA[window.state.selectedMonth];
+            const monthHolidays = window.state.holidays.filter(h => h.month === window.state.selectedMonth);
+            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
 
             return `
                 <div class="space-y-8 animate-fadeIn">
@@ -370,7 +540,7 @@
                                 ${monthHolidays.map(h => `
                                     <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs rounded-full border border-blue-100">
                                         <span class="font-bold">${h.day}</span> - ${h.name}
-                                        <button onclick="removeHoliday(${h.id})" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button>
+                                        <button onclick="removeHoliday('${h.id}')" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button>
                                     </div>
                                 `).join('')}
                                 ${monthHolidays.length === 0 ? '<span class="text-xs text-gray-400 italic">Nenhuma data cadastrada.</span>' : ''}
@@ -394,7 +564,7 @@
                                         <th class="px-4 py-3 min-w-[120px]">Link</th>
                                         <th class="px-4 py-3 min-w-[150px]">Pós-Evento (Ocorrência)</th>
                                         <th class="px-4 py-3 min-w-[150px]">Pós-Evento (Tomada)</th>
-                                        <th class="px-4 py-3 min-w-[120px]">Meta Satisfação</th>
+                                        <th class="px-4 py-3 min-w-[120px]">Satisfação (Real)</th>
                                         <th class="px-4 py-3 min-w-[100px]">Status</th>
                                         <th class="px-4 py-3 w-[50px] no-print">Ações</th>
                                     </tr>
@@ -405,26 +575,26 @@
                                         return `
                                         <tr class="hover:bg-gray-50 align-top">
                                             <td class="px-4 py-3">
-                                                <select onchange="updateActivity(${act.id}, 'type', this.value)" class="w-full border rounded text-xs p-1.5 focus:ring-blue-500 font-bold ${getTypeColor(act.type)}">
+                                                <select onchange="updateActivity('${act.id}', 'type', this.value)" class="w-full border rounded text-xs p-1.5 focus:ring-blue-500 font-bold ${getTypeColor(act.type)}">
                                                     ${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <input type="text" value="${act.eventName}" data-id="${act.id}" data-field="eventName" placeholder="Nome..." class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium">
+                                                <input type="text" value="${act.eventName || ''}" data-id="${act.id}" data-field="eventName" placeholder="Nome..." class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium">
                                             </td>
                                             <td class="px-4 py-3">
-                                                <select onchange="updateActivity(${act.id}, 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">
+                                                <select onchange="updateActivity('${act.id}', 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">
                                                     ${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex flex-col gap-1">
-                                                    <input type="date" value="${act.date}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1">
-                                                    <input type="time" value="${act.time}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1">
+                                                    <input type="date" value="${act.date || ''}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1">
+                                                    <input type="time" value="${act.time || ''}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1">
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <input type="text" value="${act.link}" data-id="${act.id}" data-field="link" placeholder="http://..." class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600">
+                                                <input type="text" value="${act.link || ''}" data-id="${act.id}" data-field="link" placeholder="http://..." class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600">
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex flex-col gap-1">
@@ -437,7 +607,7 @@
                                             </td>
                                             <td class="px-4 py-3">
                                                 <div class="flex items-center gap-1 mb-1">
-                                                    <input type="number" value="${act.satisfaction}" data-id="${act.id}" data-field="satisfaction" placeholder="%" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100">
+                                                    <input type="number" value="${act.satisfaction || ''}" data-id="${act.id}" data-field="satisfaction" placeholder="%" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100">
                                                     <span class="text-xs text-gray-500">%</span>
                                                 </div>
                                                 <div class="w-full bg-gray-200 rounded-full h-1.5">
@@ -445,13 +615,13 @@
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <select onchange="updateActivity(${act.id}, 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" 
+                                                <select onchange="updateActivity('${act.id}', 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" 
                                                     style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">
                                                     ${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3 text-center no-print">
-                                                <button onclick="requestDeleteActivity(${act.id})" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button>
+                                                <button onclick="requestDeleteActivity('${act.id}')" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button>
                                             </td>
                                         </tr>
                                     `}).join('')}
@@ -464,6 +634,7 @@
             `;
         }
 
+        // Demais views (Calendar, Crisis) permanecem idênticas
         function getCalendarViewHTML() {
             return `
                 <div class="space-y-6 animate-fadeIn">
@@ -476,7 +647,7 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${MONTHS_DATA.map(m => {
-                            const mActs = state.activities.filter(a => a.month === m.id);
+                            const mActs = window.state.activities.filter(a => a.month === m.id);
                             const total = mActs.length;
                             const achieved = mActs.filter(a => a.status === 'Concluído').length;
                             
@@ -492,7 +663,7 @@
                                             ${mActs.length > 0 ? mActs.map(act => `
                                                 <li class="text-xs text-gray-700 flex items-start gap-2">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span>
-                                                    <span class="" title="${act.eventName}">${act.eventName || 'Sem nome'}</span>
+                                                    <span class="" title="${act.eventName || 'Sem nome'}">${act.eventName || 'Sem nome'}</span>
                                                 </li>
                                             `).join('') : '<li class="text-xs text-gray-300 italic">Nenhum evento</li>'}
                                         </ul>
@@ -515,7 +686,7 @@
                     <div class="bg-red-50 p-6 rounded-lg border border-red-100 flex flex-col md:flex-row justify-between items-start gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-red-800 mb-2 flex items-center gap-2"><i data-lucide="shield-alert"></i> Gestão de Riscos & Crises</h2>
-                            <p class="text-red-700 text-sm max-w-2xl">Classificação de riscos e preenchimento manual conforme padrão estabelecido.</p>
+                            <p class="text-red-700 text-sm max-w-2xl">Classificação de riscos e preenchimento manual.</p>
                         </div>
                         <div class="flex gap-2 no-print w-full md:w-auto">
                             <button onclick="handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button>
@@ -528,34 +699,34 @@
                     </button>
 
                     <div class="grid gap-6">
-                        ${state.crises.map((item, index) => `
+                        ${window.state.crises.map((item, index) => `
                             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative print-break-inside-avoid">
                                 <div class="absolute top-4 right-4 no-print">
-                                    <button onclick="requestDeleteCrisis(${item.id})" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button>
+                                    <button onclick="requestDeleteCrisis('${item.id}')" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button>
                                 </div>
                                 <h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#${index + 1}</span> Ocorrência de Setor</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-md border border-gray-100">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label>
-                                        <select onchange="updateCrisis(${item.id}, 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">
+                                        <select onchange="updateCrisis('${item.id}', 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">
                                             ${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Origem</label>
-                                        <select onchange="updateCrisis(${item.id}, 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
+                                        <select onchange="updateCrisis('${item.id}', 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
                                             ${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Setor</label>
-                                        <select onchange="updateCrisis(${item.id}, 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
+                                        <select onchange="updateCrisis('${item.id}', 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
                                             ${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label>
-                                        <select onchange="updateCrisis(${item.id}, 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
+                                        <select onchange="updateCrisis('${item.id}', 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">
                                             ${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}
                                         </select>
                                     </div>
@@ -580,27 +751,33 @@
                                 </div>
                             </div>
                         `).join('')}
-                        ${state.crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
+                        ${window.state.crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
                     </div>
                 </div>
             `;
         }
 
         function getReportsViewHTML() {
-            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const activities = window.state.activities;
+            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
             const total = monthActs.length;
             const completed = monthActs.filter(a => a.status === 'Concluído').length;
             const missed = total - completed;
             const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
-            const external = monthActs.filter(a => a.type === 'Evento Externo').length;
-            const report = state.monthlyReports[state.selectedMonth] || { explanation: '', highlights: '', suggestions: '' };
+            
+            // Cálculo Média MENSAL
+            const ratedMonthActs = monthActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
+            const totalMonthSat = ratedMonthActs.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
+            const avgMonthSat = ratedMonthActs.length > 0 ? Math.round(totalMonthSat / ratedMonthActs.length) : 0;
+
+            const report = window.state.monthlyReports[window.state.selectedMonth] || { explanation: '', highlights: '', suggestions: '' };
 
             return `
                 <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800">Relatório de Desempenho e Metas</h2>
-                            <p class="text-gray-500">Mês de Referência: <span class="font-bold text-blue-600">${MONTHS_DATA[state.selectedMonth].name}</span></p>
+                            <p class="text-gray-500">Mês de Referência: <span class="font-bold text-blue-600">${MONTHS_DATA[window.state.selectedMonth].name}</span></p>
                         </div>
                         <div class="flex gap-2 no-print w-full md:w-auto flex-wrap">
                              <button onclick="exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold"><i data-lucide="file-check-2" size="16"></i> Exportar para Alta Gestão</button>
@@ -611,11 +788,13 @@
 
                     <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                         <h3 class="text-sm font-bold text-gray-500 uppercase mb-4 border-b pb-2">Metas Consolidadas do Mês</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <div class="p-4 bg-gray-50 rounded text-center"><div class="text-3xl font-bold text-gray-800">${total}</div><div class="text-xs font-bold text-gray-500 uppercase mt-1">Meta Mensal (Ações)</div></div>
                              <div class="p-4 bg-green-50 rounded text-center"><div class="text-3xl font-bold text-green-600">${completed}</div><div class="text-xs font-bold text-green-800 uppercase mt-1">Metas Atingidas</div></div>
                             <div class="p-4 bg-yellow-50 rounded text-center"><div class="text-3xl font-bold text-yellow-600">${missed}</div><div class="text-xs font-bold text-yellow-800 uppercase mt-1">Não Alcançadas</div></div>
                             <div class="p-4 bg-blue-50 rounded text-center"><div class="text-3xl font-bold text-blue-600">${internal}</div><div class="text-xs font-bold text-blue-800 uppercase mt-1">Eventos Internos</div></div>
+                            <!-- Card Média Mês (NOVO) -->
+                            <div class="p-4 bg-indigo-50 rounded text-center border border-indigo-100"><div class="text-3xl font-bold text-indigo-600">${avgMonthSat}%</div><div class="text-xs font-bold text-indigo-800 uppercase mt-1">Média Satisfação</div></div>
                         </div>
                     </div>
 
@@ -639,8 +818,7 @@
             `;
         }
 
-        // --- Logic & Helpers ---
-
+        // --- Helpers de Estilo ---
         function getTypeColor(type) {
             switch (type) {
                 case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -667,27 +845,24 @@
 
         function attachInputListeners() {
             document.querySelectorAll('.act-input').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    const id = parseInt(e.target.dataset.id);
+                input.addEventListener('change', (e) => { // Change evita updates excessivos, pode usar blur ou debounce
+                    const id = e.target.dataset.id;
                     const field = e.target.dataset.field;
-                    const act = state.activities.find(a => a.id === id);
-                    if (act) act[field] = e.target.value;
-                    if (field === 'satisfaction') renderApp(); 
+                    window.dbUpdateActivity(id, field, e.target.value);
                 });
             });
             document.querySelectorAll('.crisis-input').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    const id = parseInt(e.target.dataset.cid);
+                input.addEventListener('change', (e) => {
+                    const id = e.target.dataset.cid;
                     const field = e.target.dataset.cfield;
-                    const item = state.crises.find(c => c.id === id);
-                    if (item) item[field] = e.target.value;
+                    window.dbUpdateCrisis(id, field, e.target.value);
                 });
             });
         }
 
         // --- Actions ---
 
-        function handleSave() { alert('Dados salvos com sucesso no sistema!'); }
+        function handleSave() { alert('Alterações salvas automaticamente no banco de dados!'); }
         function exportPDF() { setTimeout(() => window.print(), 100); }
 
         function openConfirmModal(msg, actionCallback) {
@@ -704,98 +879,84 @@
             const dayInput = document.getElementById('holiday-day');
             const nameInput = document.getElementById('holiday-name');
             if (dayInput.value && nameInput.value) {
-                state.holidays.push({ id: Date.now(), month: state.selectedMonth, day: dayInput.value, name: nameInput.value });
-                renderApp();
+                window.dbAddHoliday({ month: window.state.selectedMonth, day: dayInput.value, name: nameInput.value });
             }
         }
         function removeHoliday(id) {
-            openConfirmModal("Apagar esta data comemorativa?", () => {
-                state.holidays = state.holidays.filter(h => h.id !== id);
-                renderApp();
-            });
+            openConfirmModal("Apagar esta data comemorativa?", () => window.dbDeleteHoliday(id));
         }
 
         function addActivity() {
-            state.activities.push({
-                id: Date.now(),
-                month: state.selectedMonth,
+            window.dbAddActivity({
+                month: window.state.selectedMonth,
                 type: 'Evento Interno',
                 eventName: '',
                 audience: 'Interno',
                 link: '',
                 date: '', time: '', 
                 postName: '', postOccurrence: '', postAction: '',
-                satisfaction: '',
+                satisfaction: '', // Média Real input
                 status: 'Planejado'
             });
-            renderApp();
         }
         function updateActivity(id, field, value) {
-            const act = state.activities.find(a => a.id === id);
-            if (act) {
-                act[field] = value;
-                if (field === 'type' || field === 'status' || field === 'audience') renderApp();
-            }
+            window.dbUpdateActivity(id, field, value);
         }
         function requestDeleteActivity(id) {
-            openConfirmModal("Deseja excluir esta ação?", () => {
-                state.activities = state.activities.filter(a => a.id !== id);
-                renderApp();
-            });
+            openConfirmModal("Deseja excluir esta ação?", () => window.dbDeleteActivity(id));
         }
 
         function addCrisis() {
-            state.crises.push({
-                id: Date.now(),
+            window.dbAddCrisis({
                 date: new Date().toISOString().split('T')[0],
                 riskLevel: 'Sem relevância crítica', origin: 'Interno', sector: 'Comunicação', responsible: 'Vera Nascimento',
                 correctiveAction: '', risks: '', learning: '', improvement: ''
             });
-            renderApp();
         }
         function updateCrisis(id, field, value) {
-            const item = state.crises.find(c => c.id === id);
-            if (item) {
-                item[field] = value;
-                if(field === 'riskLevel') renderApp();
-            }
+            window.dbUpdateCrisis(id, field, value);
         }
         function requestDeleteCrisis(id) {
-            openConfirmModal("Apagar este registro de risco/crise?", () => {
-                state.crises = state.crises.filter(c => c.id !== id);
-                renderApp();
-            });
+            openConfirmModal("Apagar este registro de risco/crise?", () => window.dbDeleteCrisis(id));
         }
 
         function updateReport(field, value) {
-            if (!state.monthlyReports[state.selectedMonth]) state.monthlyReports[state.selectedMonth] = {};
-            state.monthlyReports[state.selectedMonth][field] = value;
+            window.dbUpdateReport(window.state.selectedMonth, field, value);
         }
         function requestClearReport() {
-            openConfirmModal("Tem certeza que deseja apagar todo o relatório deste mês?", () => {
-                if (state.monthlyReports[state.selectedMonth]) {
-                    state.monthlyReports[state.selectedMonth] = { explanation: '', highlights: '', suggestions: '' };
-                    renderApp();
-                }
-            });
+            openConfirmModal("Apagar o relatório deste mês?", () => window.dbClearReport(window.state.selectedMonth));
         }
+
+        // Notificações
+        function addNotification() {
+            const input = document.getElementById('new-notification');
+            if(input.value.trim()) {
+                window.dbAddNotification(input.value);
+                input.value = '';
+            }
+        }
+        function deleteNotification(id) {
+            window.dbDeleteNotification(id);
+        }
+
         function generateAutoText() {
-            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const activities = window.state.activities;
+            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
             const total = monthActs.length;
             const completed = monthActs.filter(a => a.status === 'Concluído').length;
             const efficiency = total > 0 ? Math.round((completed/total)*100) : 0;
             
-            let text = `ANÁLISE DE ENTREGAS PARA ALTA GESTÃO - ${MONTHS_DATA[state.selectedMonth].name.toUpperCase()}\n\n`;
+            let text = `ANÁLISE DE ENTREGAS PARA ALTA GESTÃO - ${MONTHS_DATA[window.state.selectedMonth].name.toUpperCase()}\n\n`;
             if (total === 0) {
                 text += "Não houve registros de atividades planejadas para este período.";
             } else {
                 text += `O mês encerrou com ${total} ações planejadas e ${completed} metas atingidas. A eficiência de execução atingiu ${efficiency}%.\n\n`;
             }
             updateReport('explanation', text);
-            document.getElementById('report-explanation').value = text;
         }
         function generateHighlights() {
-            const monthActs = state.activities.filter(a => a.month === state.selectedMonth);
+            const activities = window.state.activities;
+            const monthActs = activities.filter(a => a.month === window.state.selectedMonth);
             const completedActs = monthActs.filter(a => a.status === 'Concluído');
             const internal = monthActs.filter(a => a.type === 'Evento Interno').length;
             const external = monthActs.filter(a => a.type === 'Evento Externo').length;
@@ -805,18 +966,15 @@
                 text += "- Nenhuma atividade concluída para destacar ainda.";
             } else {
                 completedActs.forEach(act => {
-                    text += `• ${act.type}: "${act.eventName || 'Evento sem nome'}" - Público: ${act.audience}\n  Satisfação: ${act.satisfaction || '0'}%\n`;
+                    text += `• ${act.type}: "${act.eventName || 'Evento sem nome'}" - Público: ${act.audience}\n  Satisfação Real: ${act.satisfaction || '0'}%\n`;
                 });
                 text += `\nRESUMO QUANTITATIVO:\n`;
                 if (internal > 0) text += `- ${internal} Eventos Internos Realizados\n`;
                 if (external > 0) text += `- ${external} Eventos Externos Executados\n`;
             }
             updateReport('highlights', text);
-            document.getElementById('report-highlights').value = text;
         }
 
     </script>
 </body>
 </html>
-           
-
