@@ -37,7 +37,7 @@
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact; 
                 background-color: white;
-                font-size: 10px; /* Fonte reduzida para caber em retrato */
+                font-size: 10px; 
             }
             #app-content {
                 width: 100% !important;
@@ -49,8 +49,12 @@
             .print-break-inside-avoid { break-inside: avoid; }
             table { font-size: 9px; width: 100%; table-layout: fixed; }
             th, td { padding: 4px 2px !important; word-wrap: break-word; }
-            
-            /* Ajustes visuais para impressão */
+            input, select, textarea {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                resize: none; 
+            }
             .bg-blue-100 { background-color: #dbeafe !important; }
             .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
             .bg-green-100 { background-color: #dcfce7 !important; }
@@ -58,7 +62,6 @@
             .bg-cyan-100 { background-color: #cffafe !important; }
             .bg-purple-100 { background-color: #f3e8ff !important; }
             
-            /* Esconder scrolls */
             .custom-scrollbar::-webkit-scrollbar { display: none; }
         }
 
@@ -144,11 +147,11 @@
     </footer>
     
     <!-- Status Indicator -->
-    <div id="connection-status" class="fixed bottom-2 right-2 text-[10px] text-gray-400 no-print opacity-50 hover:opacity-100 transition-opacity">
+    <div id="connection-status" class="fixed bottom-2 right-2 text-[10px] text-gray-400 no-print opacity-50 hover:opacity-100 transition-opacity bg-white px-2 py-1 rounded shadow border">
         Inicializando...
     </div>
 
-    <!-- SCRIPT DO SISTEMA -->
+    <!-- SCRIPT ÚNICO E CORRIGIDO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -177,12 +180,12 @@
         const ORIGIN_OPTIONS = ['Interno', 'Externo', 'Misto'];
         const RESPONSIBLE_OPTIONS = ['Vera Nascimento', 'Gisely Rocha'];
 
-        // Configuração
+        // --- CONFIGURAÇÃO ---
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
         const DB_KEY = 'evereste_comunicacao_local_v2'; 
 
-        // ESTADO GLOBAL
+        // --- ESTADO GLOBAL ---
         window.state = {
             view: 'dashboard',
             selectedMonth: 0,
@@ -197,33 +200,32 @@
 
         let db, auth;
 
-        // --- 1. FUNÇÕES GLOBAIS DE NAVEGAÇÃO E UI ---
-        // Definidas explicitamente no window para evitar erros de referência
+        // --- 1. FUNÇÕES GLOBAIS DE INTERFACE ---
+        // Definidas no window para estarem disponíveis no HTML
 
-        window.changeView = function(viewName) {
+        window.changeView = (viewName) => {
             window.state.view = viewName;
             renderApp();
         };
 
-        window.changeMonth = function(monthId) {
+        window.changeMonth = (monthId) => {
             window.state.selectedMonth = parseInt(monthId);
             renderApp();
         };
 
-        window.toggleMobileMenu = function() {
+        window.toggleMobileMenu = () => {
             const menu = document.getElementById('mobile-menu');
             if(menu) menu.classList.toggle('hidden');
         };
 
-        window.handleSave = function() { 
+        window.handleSave = () => {
+            if(window.state.mode === 'local') saveLocal();
             alert(`Dados salvos! (${window.state.mode === 'firebase' ? 'Nuvem' : 'Local'})`); 
         };
         
-        window.exportPDF = function() { 
-            setTimeout(() => window.print(), 100); 
-        };
+        window.exportPDF = () => setTimeout(() => window.print(), 100);
 
-        window.openConfirmModal = function(msg, actionCallback) {
+        window.openConfirmModal = (msg, actionCallback) => {
             const modal = document.getElementById('modal-overlay');
             const msgEl = document.getElementById('modal-message');
             const btn = document.getElementById('modal-confirm-btn');
@@ -234,18 +236,132 @@
             }
         };
 
-        window.closeModal = function() {
+        window.closeModal = () => {
             const modal = document.getElementById('modal-overlay');
             if(modal) modal.classList.add('hidden');
         };
 
-        // --- 2. RENDERIZAÇÃO (CORE) ---
-        
+        // --- 2. GERENCIAMENTO DE DADOS (CRUD) ---
+
+        function saveLocal() {
+            localStorage.setItem(DB_KEY, JSON.stringify({
+                activities: window.state.activities,
+                crises: window.state.crises,
+                notifications: window.state.notifications,
+                monthlyReports: window.state.monthlyReports,
+                holidays: window.state.holidays
+            }));
+            renderApp();
+        }
+
+        // Atividades
+        window.addActivity = async () => {
+            const data = {
+                month: window.state.selectedMonth,
+                type: 'Evento Interno', eventName: '', audience: 'Interno', link: '',
+                date: '', time: '', postName: '', postOccurrence: '', postAction: '',
+                satisfaction: '', status: 'Planejado'
+            };
+            if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), data);
+            else { data.id = Date.now().toString(); window.state.activities.push(data); saveLocal(); }
+        };
+        window.updateUnifiedActivity = async (id, field, value) => {
+            if (window.state.mode === 'firebase') await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [field]: value });
+            else { const item = window.state.activities.find(x => x.id === id); if(item) { item[field] = value; saveLocal(); } }
+        };
+        window.requestDeleteActivity = (id) => window.openConfirmModal("Excluir ação?", async () => {
+            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id));
+            else { window.state.activities = window.state.activities.filter(x => x.id !== id); saveLocal(); }
+        });
+
+        // Crises
+        window.addCrisis = async () => {
+            const data = {
+                date: new Date().toISOString().split('T')[0],
+                riskLevel: 'Sem relevância crítica', origin: 'Interno', sector: 'Comunicação', responsible: 'Vera Nascimento',
+                correctiveAction: '', risks: '', learning: '', improvement: ''
+            };
+            if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), data);
+            else { data.id = Date.now().toString(); window.state.crises.push(data); saveLocal(); }
+        };
+        window.updateUnifiedCrisis = async (id, field, value) => {
+            if (window.state.mode === 'firebase') await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [field]: value });
+            else { const item = window.state.crises.find(x => x.id === id); if(item) { item[field] = value; saveLocal(); } }
+        };
+        window.requestDeleteCrisis = (id) => window.openConfirmModal("Excluir registro?", async () => {
+            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id));
+            else { window.state.crises = window.state.crises.filter(x => x.id !== id); saveLocal(); }
+        });
+
+        // Notificações
+        window.addNotification = async () => {
+            const input = document.getElementById('new-notification');
+            if(input && input.value.trim()) {
+                const data = { text: input.value, timestamp: new Date().toISOString() };
+                if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), data);
+                else { data.id = Date.now().toString(); window.state.notifications.unshift(data); saveLocal(); }
+                input.value = '';
+            }
+        };
+        window.deleteNotification = async (id) => {
+            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+            else { window.state.notifications = window.state.notifications.filter(x => x.id !== id); saveLocal(); }
+        };
+
+        // Feriados
+        window.addHoliday = async () => {
+            const dayInput = document.getElementById('holiday-day');
+            const nameInput = document.getElementById('holiday-name');
+            if (dayInput && nameInput && dayInput.value && nameInput.value) {
+                const data = { month: window.state.selectedMonth, day: dayInput.value, name: nameInput.value };
+                if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), data);
+                else { data.id = Date.now().toString(); window.state.holidays.push(data); saveLocal(); }
+            }
+        };
+        window.removeHoliday = (id) => window.openConfirmModal("Apagar data?", async () => {
+            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
+            else { window.state.holidays = window.state.holidays.filter(x => x.id !== id); saveLocal(); }
+        });
+
+        // Relatórios
+        window.updateUnifiedReport = async (monthId, field, value) => {
+            if (window.state.mode === 'firebase') await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString()), { [field]: value }, { merge: true });
+            else {
+                if(!window.state.monthlyReports[monthId]) window.state.monthlyReports[monthId] = {};
+                window.state.monthlyReports[monthId][field] = value;
+                saveLocal();
+            }
+        };
+        window.requestClearReport = () => window.openConfirmModal("Limpar relatório?", async () => {
+            if (window.state.mode === 'firebase') await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', window.state.selectedMonth.toString()), { explanation: '', highlights: '', suggestions: '' });
+            else {
+                if(window.state.monthlyReports[window.state.selectedMonth]) window.state.monthlyReports[window.state.selectedMonth] = { explanation: '', highlights: '', suggestions: '' };
+                saveLocal();
+            }
+        });
+
+        window.generateAutoText = () => {
+            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
+            const total = monthActs.length;
+            const completed = monthActs.filter(a => a.status === 'Concluído').length;
+            const efficiency = total > 0 ? Math.round((completed/total)*100) : 0;
+            const text = `ANÁLISE DE ENTREGAS - ${MONTHS_DATA[window.state.selectedMonth].name.toUpperCase()}\n\nO mês encerrou com ${total} ações planejadas e ${completed} metas atingidas. Eficiência: ${efficiency}%.`;
+            window.updateUnifiedReport(window.state.selectedMonth, 'explanation', text);
+        };
+        window.generateHighlights = () => {
+            const completedActs = window.state.activities.filter(a => a.month === window.state.selectedMonth && a.status === 'Concluído');
+            let text = "RESULTADOS CONSOLIDADOS:\n\n";
+            if (completedActs.length === 0) text += "- Nenhuma atividade concluída.";
+            else completedActs.forEach(act => text += `• ${act.type}: "${act.eventName || 'Evento'}" - Satisfação: ${act.satisfaction || '0'}%\n`);
+            window.updateUnifiedReport(window.state.selectedMonth, 'highlights', text);
+        };
+
+        // --- 3. RENDERIZAÇÃO E HTML ---
+
         function renderApp() {
             const content = document.getElementById('app-content');
             if(!content) return;
 
-            // Atualizar navegação
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 if (btn.dataset.view === window.state.view) {
                     btn.className = 'nav-btn nav-btn-active px-4 py-2 rounded-md text-sm font-medium transition-all';
@@ -254,7 +370,6 @@
                 }
             });
 
-            // Seletor de Mês (Visível em mês e relatórios)
             let monthSelectorHTML = '';
             if (window.state.view === 'month' || window.state.view === 'reports') {
                 monthSelectorHTML = `
@@ -274,101 +389,48 @@
                 `;
             }
 
-            // Tratamento de Erro Seguro para renderização
-            try {
-                let viewHTML = '';
-                if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
-                else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
-                else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
-                else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
-                else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
-                
-                content.innerHTML = monthSelectorHTML + viewHTML;
-                
-                // Inicializar ícones e listeners após injetar HTML
-                if(typeof lucide !== 'undefined') lucide.createIcons();
-                attachInputListeners();
-            } catch (e) {
-                console.error("Erro de renderização:", e);
-                content.innerHTML = `<div class="p-8 text-center text-red-600">Erro ao carregar a tela. Tente recarregar a página. (${e.message})</div>`;
-            }
+            let viewHTML = '';
+            if (window.state.view === 'dashboard') viewHTML = getDashboardHTML();
+            else if (window.state.view === 'month') viewHTML = getMonthViewHTML();
+            else if (window.state.view === 'calendar') viewHTML = getCalendarViewHTML();
+            else if (window.state.view === 'crisis') viewHTML = getCrisisViewHTML();
+            else if (window.state.view === 'reports') viewHTML = getReportsViewHTML();
+
+            content.innerHTML = monthSelectorHTML + viewHTML;
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+            attachInputListeners();
         }
+
+        // ... (Helpers de template e cores permanecem iguais, apenas movidos para dentro deste bloco único) ...
         
-        // Expor renderApp para chamadas globais
-        window.renderApp = renderApp;
-
-        // --- 3. GERADORES DE VIEWS HTML ---
-
         function getDashboardHTML() {
             const activities = window.state.activities || [];
-            const crises = window.state.crises || [];
-            const notifications = window.state.notifications || [];
-
-            const totalActs = activities.length;
             const completedActs = activities.filter(a => a.status === 'Concluído');
+            const annualGoal = activities.length; 
             const annualAchieved = completedActs.length;
-            
-            // Cálculo Média Real
             const ratedEvents = completedActs.filter(a => a.satisfaction && !isNaN(parseFloat(a.satisfaction)));
             const totalSatisfaction = ratedEvents.reduce((acc, curr) => acc + parseFloat(curr.satisfaction), 0);
             const averageSatisfaction = ratedEvents.length > 0 ? Math.round(totalSatisfaction / ratedEvents.length) : 0;
+            const topEvents = activities.filter(a => a.status === 'Concluído' && a.satisfaction).sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction)).slice(0, 5);
+            
+            const topEventsHTML = topEvents.map((evt, idx) => `<div class="flex items-center justify-between p-3 bg-white border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"><div class="flex items-center gap-3"><div class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 font-bold rounded-full text-xs">${idx + 1}º</div><div><p class="text-sm font-bold text-gray-800">${evt.eventName || 'Evento'}</p><p class="text-[10px] text-gray-500">${evt.type}</p></div></div><div class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-green-700 font-bold text-xs">${evt.satisfaction}% <i data-lucide="star" size="12"></i></div></div>`).join('') || '<p class="text-xs text-gray-400 italic text-center py-4">Sem avaliações.</p>';
+            const notificationsHTML = window.state.notifications.map(n => `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-2 rounded shadow-sm flex justify-between items-start"><div><p class="text-sm text-yellow-800 font-medium">${n.text}</p><p class="text-[10px] text-yellow-600 mt-1">${new Date(n.timestamp).toLocaleString()}</p></div><button onclick="window.deleteNotification('${n.id}')" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button></div>`).join('');
 
-            const topEvents = activities
-                .filter(a => a.status === 'Concluído' && a.satisfaction && !isNaN(parseFloat(a.satisfaction)))
-                .sort((a, b) => parseFloat(b.satisfaction) - parseFloat(a.satisfaction))
-                .slice(0, 5);
-
-            const topEventsHTML = topEvents.map((evt, idx) => `
-                <div class="flex items-center justify-between p-3 bg-white border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 font-bold rounded-full text-xs">${idx + 1}º</div>
-                        <div>
-                            <p class="text-sm font-bold text-gray-800">${evt.eventName || 'Evento'}</p>
-                            <p class="text-[10px] text-gray-500">${evt.type}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-green-700 font-bold text-xs">${evt.satisfaction}% <i data-lucide="star" size="12"></i></div>
-                </div>
-            `).join('') || '<p class="text-xs text-gray-400 italic text-center py-4">Sem avaliações.</p>';
-
-            const notificationsHTML = notifications.map(n => `
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-2 rounded shadow-sm flex justify-between items-start">
-                    <div><p class="text-sm text-yellow-800 font-medium">${n.text}</p><p class="text-[10px] text-yellow-600 mt-1">${new Date(n.timestamp).toLocaleString()}</p></div>
-                    <button onclick="window.deleteNotification('${n.id}')" class="text-yellow-400 hover:text-yellow-700"><i data-lucide="x" size="14"></i></button>
-                </div>
-            `).join('');
-
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="flex justify-between items-center border-b pb-4"><h2 class="text-2xl font-bold text-gray-800">Dashboard Geral</h2><button onclick="window.exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm"><i data-lucide="printer"></i> Exportar PDF</button></div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-indigo-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Média Real (Anual)</p><h3 class="text-3xl font-bold text-indigo-700">${averageSatisfaction}%</h3></div><i data-lucide="star" class="text-indigo-500 h-8 w-8 opacity-80"></i></div><div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${averageSatisfaction}%"></div></div></div>
-                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Meta Anual</p><h3 class="text-3xl font-bold text-gray-800">${totalActs}</h3></div><i data-lucide="target" class="text-blue-600 h-8 w-8 opacity-80"></i></div></div>
-                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Atingidas</p><h3 class="text-3xl font-bold text-gray-800">${annualAchieved}</h3></div><i data-lucide="check-circle-2" class="text-green-500 h-8 w-8 opacity-80"></i></div></div>
-                        <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Riscos</p><h3 class="text-3xl font-bold text-gray-800">${crises.length}</h3></div><i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i></div></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução</h3><div class="h-48 flex items-end gap-2 justify-between px-2">${MONTHS_DATA.map(m => { const c = activities.filter(a => a.month === m.id).length; const h = c > 0 ? Math.min((c/15)*100,100) : 4; return `<div class="flex flex-col items-center flex-1 group relative"><span class="text-xs font-bold text-blue-600 mb-1 absolute bottom-full">${c}</span><div class="w-full rounded-t ${c>0?'bg-blue-500':'bg-gray-100'}" style="height:${h}%"></div><span class="text-xs text-gray-500 mt-2 truncate text-center">${m.name.substring(0,3)}</span></div>`}).join('')}</div></div>
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Top Eventos</h3><div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">${topEventsHTML}</div></div>
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-yellow-500"></i> Mural</h3><div class="flex gap-2 mb-4"><input type="text" id="new-notification" placeholder="Aviso..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"><button onclick="window.addNotification()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button></div><div class="overflow-y-auto flex-1 custom-scrollbar max-h-[200px]">${notificationsHTML}</div></div>
-                    </div>
-                </div>
-            `;
+            return `<div class="space-y-6 animate-fadeIn"><div class="flex justify-between items-center border-b pb-4"><h2 class="text-2xl font-bold text-gray-800">Dashboard Geral</h2><button onclick="window.exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium no-print shadow-sm"><i data-lucide="printer"></i> Exportar PDF</button></div><div class="grid grid-cols-1 md:grid-cols-4 gap-4"><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-indigo-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Média Real (Anual)</p><h3 class="text-3xl font-bold text-indigo-700">${averageSatisfaction}%</h3></div><i data-lucide="star" class="text-indigo-500 h-8 w-8 opacity-80"></i></div><div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${averageSatisfaction}%"></div></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-600"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Meta Anual</p><h3 class="text-3xl font-bold text-gray-800">${annualGoal}</h3></div><i data-lucide="target" class="text-blue-600 h-8 w-8 opacity-80"></i></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Atingidas</p><h3 class="text-3xl font-bold text-gray-800">${annualAchieved}</h3></div><i data-lucide="check-circle-2" class="text-green-500 h-8 w-8 opacity-80"></i></div></div><div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500"><div class="flex justify-between items-center"><div><p class="text-sm text-gray-500 font-medium">Riscos</p><h3 class="text-3xl font-bold text-gray-800">${window.state.crises.length}</h3></div><i data-lucide="shield-alert" class="text-red-500 h-8 w-8 opacity-80"></i></div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-blue-600"></i> Evolução</h3><div class="h-48 flex items-end gap-2 justify-between px-2">${MONTHS_DATA.map(m => { const c = activities.filter(a => a.month === m.id).length; const h = c > 0 ? Math.min((c/15)*100,100) : 4; return `<div class="flex flex-col items-center flex-1 group relative"><span class="text-xs font-bold text-blue-600 mb-1 absolute bottom-full">${c}</span><div class="w-full rounded-t ${c>0?'bg-blue-500':'bg-gray-100'}" style="height:${h}%"></div><span class="text-xs text-gray-500 mt-2 truncate text-center">${m.name.substring(0,3)}</span></div>`}).join('')}</div></div><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-500"></i> Top Eventos</h3><div class="flex-1 overflow-y-auto custom-scrollbar max-h-[200px]">${topEventsHTML}</div></div><div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 no-print flex flex-col h-full"><h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-yellow-500"></i> Mural</h3><div class="flex gap-2 mb-4"><input type="text" id="new-notification" placeholder="Aviso..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"><button onclick="window.addNotification()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Postar</button></div><div class="overflow-y-auto flex-1 custom-scrollbar max-h-[200px]">${notificationsHTML}</div></div></div></div>`;
         }
 
         function getMonthViewHTML() {
-            const monthId = window.state.selectedMonth;
-            const month = MONTHS_DATA[monthId];
-            const activities = window.state.activities || [];
-            const holidays = window.state.holidays || [];
-            
-            const monthHolidays = holidays.filter(h => h.month === monthId);
-            const monthActs = activities.filter(a => a.month === monthId);
+            const month = MONTHS_DATA[window.state.selectedMonth];
+            const monthHolidays = window.state.holidays.filter(h => h.month === window.state.selectedMonth);
+            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
+            // Helpers locais para template
+            const getTypeColor = (t) => t==='TI'?'bg-purple-100 text-purple-800':t==='Evento Interno'?'bg-blue-100 text-blue-800':t==='Evento Externo'?'bg-indigo-100 text-indigo-800':t==='Campanha'?'bg-pink-100 text-pink-800':t==='Treinamento'?'bg-orange-100 text-orange-800':'bg-cyan-100 text-cyan-800';
+            const getStatusColor = (s) => s==='Concluído'?{bg:'#dcfce7',txt:'#166534'}:s==='Planejado'?{bg:'#fef9c3',txt:'#854d0e'}:{bg:'#fee2e2',txt:'#991b1b'};
 
             return `
                 <div class="space-y-8 animate-fadeIn">
                     <div class="bg-white p-6 rounded-lg shadow-sm ${month.color}"><div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-gray-800 uppercase">${month.name}</h2><div class="flex gap-2 no-print"><button onclick="window.handleSave()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"><i data-lucide="save" size="16"></i> Salvar</button><button onclick="window.exportPDF()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"><i data-lucide="printer" size="16"></i> Exportar PDF</button></div></div><div class="mt-6 pt-4 border-t border-gray-100"><div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2"><h4 class="text-xs font-bold text-gray-500 uppercase">Datas Comemorativas</h4><div class="flex gap-2 no-print bg-gray-50 p-1 rounded items-center"><input type="text" id="holiday-day" placeholder="Dia" class="w-16 border border-gray-300 rounded px-2 py-1 text-xs"><input type="text" id="holiday-name" placeholder="Evento" class="w-32 border border-gray-300 rounded px-2 py-1 text-xs"><button onclick="window.addHoliday()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700">Adicionar</button></div></div><div class="flex flex-wrap gap-2">${monthHolidays.map(h => `<div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs rounded-full border border-blue-100"><span class="font-bold">${h.day}</span> - ${h.name}<button onclick="window.removeHoliday('${h.id}')" class="text-red-400 hover:text-red-600 ml-1 no-print"><i data-lucide="x" size="12"></i></button></div>`).join('')}</div></div></div>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div class="flex justify-between items-center p-4 border-b bg-gray-50"><h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="file-text" class="text-blue-600"></i> Cronograma</h3><button onclick="window.addActivity()" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button></div><div class="overflow-x-auto custom-scrollbar"><table class="w-full text-sm text-left whitespace-nowrap"><thead class="bg-gray-100 text-gray-700 font-semibold uppercase text-xs"><tr><th class="px-4 py-3 min-w-[140px]">Tipo</th><th class="px-4 py-3 min-w-[200px]">Nome</th><th class="px-4 py-3 min-w-[120px]">Público</th><th class="px-4 py-3 min-w-[120px]">Data/Hora</th><th class="px-4 py-3 min-w-[120px]">Link</th><th class="px-4 py-3 min-w-[150px]">Ocorrência</th><th class="px-4 py-3 min-w-[150px]">Tomada</th><th class="px-4 py-3 min-w-[120px]">Satisfação</th><th class="px-4 py-3 min-w-[100px]">Status</th><th class="px-4 py-3 w-[50px] no-print">Ações</th></tr></thead><tbody class="divide-y divide-gray-100">${monthActs.map(act => { const satisfactionWidth = act.satisfaction ? Math.min(act.satisfaction, 100) : 0; return `<tr class="hover:bg-gray-50 align-top"><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'type', this.value)" class="w-full border rounded text-xs p-1.5 ${getTypeColor(act.type)}">${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><input type="text" value="${act.eventName || ''}" data-id="${act.id}" data-field="eventName" class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium"></td><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="date" value="${act.date || ''}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1"><input type="time" value="${act.time || ''}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1"></div></td><td class="px-4 py-3"><input type="text" value="${act.link || ''}" data-id="${act.id}" data-field="link" class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600"></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="text" value="${act.postName || ''}" data-id="${act.id}" data-field="postName" placeholder="Resp." class="act-input w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50"><textarea data-id="${act.id}" data-field="postOccurrence" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea></div></td><td class="px-4 py-3"><textarea data-id="${act.id}" data-field="postAction" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea></td><td class="px-4 py-3"><div class="flex items-center gap-1 mb-1"><input type="number" value="${act.satisfaction || ''}" data-id="${act.id}" data-field="satisfaction" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100"><span class="text-xs text-gray-500">%</span></div><div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${satisfactionWidth}%"></div></div></td><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" style="background-color: ${getStatusColor(act.status).bg}; color: ${getStatusColor(act.status).text}">${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td class="px-4 py-3 text-center no-print"><button onclick="window.requestDeleteActivity('${act.id}')" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button></td></tr>` }).join('')}</tbody></table></div></div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div class="flex justify-between items-center p-4 border-b bg-gray-50"><h3 class="font-bold text-gray-700 flex items-center gap-2"><i data-lucide="file-text" class="text-blue-600"></i> Cronograma</h3><button onclick="window.addActivity()" class="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 no-print"><i data-lucide="plus" size="14"></i> Adicionar Ação</button></div><div class="overflow-x-auto custom-scrollbar"><table class="w-full text-sm text-left whitespace-nowrap"><thead class="bg-gray-100 text-gray-700 font-semibold uppercase text-xs"><tr><th class="px-4 py-3 min-w-[140px]">Tipo</th><th class="px-4 py-3 min-w-[200px]">Nome</th><th class="px-4 py-3 min-w-[120px]">Público</th><th class="px-4 py-3 min-w-[120px]">Data/Hora</th><th class="px-4 py-3 min-w-[120px]">Link</th><th class="px-4 py-3 min-w-[150px]">Ocorrência</th><th class="px-4 py-3 min-w-[150px]">Tomada</th><th class="px-4 py-3 min-w-[120px]">Satisfação</th><th class="px-4 py-3 min-w-[100px]">Status</th><th class="px-4 py-3 w-[50px] no-print">Ações</th></tr></thead><tbody class="divide-y divide-gray-100">${monthActs.map(act => { const st = getStatusColor(act.status); const satisfactionWidth = act.satisfaction ? Math.min(act.satisfaction, 100) : 0; return `<tr class="hover:bg-gray-50 align-top"><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'type', this.value)" class="w-full border rounded text-xs p-1.5 ${getTypeColor(act.type)} font-bold">${EVENT_TYPES.map(opt => `<option ${act.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><input type="text" value="${act.eventName || ''}" data-id="${act.id}" data-field="eventName" class="act-input w-full bg-white border border-gray-300 rounded text-xs p-1.5 font-medium"></td><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'audience', this.value)" class="w-full bg-white border border-gray-300 rounded text-xs p-1.5">${AUDIENCE_OPTIONS.map(opt => `<option ${act.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="date" value="${act.date || ''}" data-id="${act.id}" data-field="date" class="act-input w-full border border-gray-300 rounded text-xs p-1"><input type="time" value="${act.time || ''}" data-id="${act.id}" data-field="time" class="act-input w-full border border-gray-300 rounded text-xs p-1"></div></td><td class="px-4 py-3"><input type="text" value="${act.link || ''}" data-id="${act.id}" data-field="link" class="act-input w-full border border-gray-300 rounded text-xs p-1.5 text-blue-600"></td><td class="px-4 py-3"><div class="flex flex-col gap-1"><input type="text" value="${act.postName || ''}" data-id="${act.id}" data-field="postName" placeholder="Resp." class="act-input w-full border border-gray-200 rounded text-[10px] p-1 bg-gray-50"><textarea data-id="${act.id}" data-field="postOccurrence" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-12 resize-none">${act.postOccurrence || ''}</textarea></div></td><td class="px-4 py-3"><textarea data-id="${act.id}" data-field="postAction" class="act-input w-full border border-gray-300 rounded p-1 text-xs h-16 resize-none bg-yellow-50">${act.postAction || ''}</textarea></td><td class="px-4 py-3"><div class="flex items-center gap-1 mb-1"><input type="number" value="${act.satisfaction || ''}" data-id="${act.id}" data-field="satisfaction" class="act-input w-12 border border-gray-300 rounded text-xs p-1 text-center font-bold" min="0" max="100"><span class="text-xs text-gray-500">%</span></div><div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${satisfactionWidth}%"></div></div></td><td class="px-4 py-3"><select onchange="window.updateUnifiedActivity('${act.id}', 'status', this.value)" class="w-full text-xs font-bold rounded p-1.5 cursor-pointer border-none" style="background-color: ${st.bg}; color: ${st.txt}">${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${act.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td class="px-4 py-3 text-center no-print"><button onclick="window.requestDeleteActivity('${act.id}')" class="text-gray-400 hover:text-red-600 p-1"><i data-lucide="trash-2" size="16"></i></button></td></tr>` }).join('')}</tbody></table></div></div>
                 </div>
             `;
         }
@@ -392,12 +454,13 @@
 
         function getCrisisViewHTML() {
             const crises = window.state.crises || [];
+            const getRiskColor = (l) => l.includes('Grave')||l.includes('Extrema')?'text-red-600':l.includes('Moderada')?'text-orange-600':'text-gray-700';
             return `
                 <div class="space-y-6 animate-fadeIn">
                     <div class="bg-red-50 p-6 rounded-lg border border-red-100 flex flex-col md:flex-row justify-between items-start gap-4"><div><h2 class="text-2xl font-bold text-red-800 mb-2 flex items-center gap-2"><i data-lucide="shield-alert"></i> Gestão de Riscos</h2><p class="text-red-700 text-sm max-w-2xl">Classificação de riscos e preenchimento manual.</p></div><div class="flex gap-2 no-print w-full md:w-auto"><button onclick="window.handleSave()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i data-lucide="save" size="16"></i> Salvar</button><button onclick="window.exportPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i data-lucide="printer" size="16"></i> Exportar PDF</button></div></div>
                     <button onclick="window.addCrisis()" class="w-full py-4 border-2 border-dashed border-red-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-400 transition-colors font-bold uppercase tracking-wide no-print flex items-center justify-center gap-2"><i data-lucide="plus" size="20"></i> Registrar Novo Risco ou Ocorrência</button>
                     <div class="grid gap-6">
-                        ${crises.map((item, index) => `<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative print-break-inside-avoid"><div class="absolute top-4 right-4 no-print"><button onclick="window.requestDeleteCrisis('${item.id}')" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button></div><h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#${index + 1}</span> Ocorrência de Setor</h3><div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-md border border-gray-100"><div><label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColorClass(item.riskLevel)}">${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Origem</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Setor</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div></div><div class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" size="12"></i> Plano de Ação Corretiva</label><textarea data-cid="${item.id}" data-cfield="correctiveAction" class="crisis-input w-full border border-red-100 bg-white rounded p-3 text-sm focus:ring-red-500 min-h-[80px]" placeholder="Descreva ação tomada...">${item.correctiveAction}</textarea></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-gray-50 p-3 rounded border border-gray-100"><label class="block text-xs font-bold text-gray-600 mb-1">Impactos / Riscos</label><textarea data-cid="${item.id}" data-cfield="risks" class="crisis-input w-full bg-white border border-gray-200 rounded p-2 text-xs h-24 resize-none">${item.risks}</textarea></div><div class="bg-blue-50 p-3 rounded border border-blue-100"><label class="block text-xs font-bold text-blue-800 mb-1">Aprendizados</label><textarea data-cid="${item.id}" data-cfield="learning" class="crisis-input w-full bg-white border border-blue-200 rounded p-2 text-xs h-24 resize-none">${item.learning}</textarea></div><div class="bg-green-50 p-3 rounded border border-green-100"><label class="block text-xs font-bold text-green-800 mb-1">Melhoria Futura</label><textarea data-cid="${item.id}" data-cfield="improvement" class="crisis-input w-full bg-white border border-green-200 rounded p-2 text-xs h-24 resize-none">${item.improvement}</textarea></div></div></div>`).join('')}${crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
+                        ${crises.map((item, index) => `<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative print-break-inside-avoid"><div class="absolute top-4 right-4 no-print"><button onclick="window.requestDeleteCrisis('${item.id}')" class="flex items-center gap-1 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 rounded px-2 py-1 text-xs font-bold"><i data-lucide="trash-2" size="14"></i> Apagar</button></div><h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#${index + 1}</span> Ocorrência de Setor</h3><div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-md border border-gray-100"><div><label class="block text-xs font-bold text-gray-500 mb-1">Nível de Risco</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'riskLevel', this.value)" class="w-full border rounded p-2 text-sm font-bold ${getRiskColor(item.riskLevel)}">${RISK_LEVELS.map(r => `<option ${item.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Origem</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'origin', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${ORIGIN_OPTIONS.map(o => `<option ${item.origin === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Setor</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'sector', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${CRISIS_SECTOR_OPTIONS.map(s => `<option ${item.sector === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Responsável</label><select onchange="window.updateUnifiedCrisis('${item.id}', 'responsible', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm">${RESPONSIBLE_OPTIONS.map(r => `<option ${item.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div></div><div class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1 uppercase text-red-600 flex items-center gap-1"><i data-lucide="alert-triangle" size="12"></i> Plano de Ação Corretiva</label><textarea data-cid="${item.id}" data-cfield="correctiveAction" class="crisis-input w-full border border-red-100 bg-white rounded p-3 text-sm focus:ring-red-500 min-h-[80px]" placeholder="Descreva ação tomada...">${item.correctiveAction}</textarea></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-gray-50 p-3 rounded border border-gray-100"><label class="block text-xs font-bold text-gray-600 mb-1">Impactos / Riscos</label><textarea data-cid="${item.id}" data-cfield="risks" class="crisis-input w-full bg-white border border-gray-200 rounded p-2 text-xs h-24 resize-none">${item.risks}</textarea></div><div class="bg-blue-50 p-3 rounded border border-blue-100"><label class="block text-xs font-bold text-blue-800 mb-1">Aprendizados</label><textarea data-cid="${item.id}" data-cfield="learning" class="crisis-input w-full bg-white border border-blue-200 rounded p-2 text-xs h-24 resize-none">${item.learning}</textarea></div><div class="bg-green-50 p-3 rounded border border-green-100"><label class="block text-xs font-bold text-green-800 mb-1">Melhoria Futura</label><textarea data-cid="${item.id}" data-cfield="improvement" class="crisis-input w-full bg-white border border-green-200 rounded p-2 text-xs h-24 resize-none">${item.improvement}</textarea></div></div></div>`).join('')}${crises.length === 0 ? `<div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300"><i data-lucide="shield-check" class="mx-auto h-12 w-12 text-gray-300 mb-3"></i><p class="text-gray-500 font-medium">Nenhum risco ou ocorrência registrada.</p></div>` : ''}
                     </div>
                 </div>
             `;
@@ -437,188 +500,56 @@
             });
         }
 
-        // Helpers de cor
-        function getTypeColor(type) {
-            switch (type) {
-                case 'TI': return 'bg-purple-100 text-purple-800 border-purple-200';
-                case 'Evento Interno': return 'bg-blue-100 text-blue-800 border-blue-200';
-                case 'Evento Externo': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-                case 'Campanha': return 'bg-pink-100 text-pink-800 border-pink-200';
-                case 'Treinamento': return 'bg-orange-100 text-orange-800 border-orange-200';
-                case 'Gravação Externa': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-                default: return 'bg-white border-gray-300 text-gray-700';
-            }
-        }
-        function getStatusColor(status) {
-            if (status === 'Concluído') return { bg: '#dcfce7', text: '#166534' };
-            if (status === 'Planejado') return { bg: '#fef9c3', text: '#854d0e' };
-            return { bg: '#fee2e2', text: '#991b1b' };
-        }
-        function getRiskColorClass(level) {
-            if (level.includes('Grave') || level.includes('Extrema')) return 'text-red-600 border-red-200 bg-red-50';
-            if (level.includes('Moderada')) return 'text-orange-600 border-orange-200';
-            return 'text-gray-700 border-gray-300';
-        }
-
-        // --- 4. CRUD UNIFICADO ---
-        function saveLocal() {
-            if(window.state.mode === 'local') {
-                localStorage.setItem(DB_KEY, JSON.stringify({
-                    activities: window.state.activities,
-                    crises: window.state.crises,
-                    notifications: window.state.notifications,
-                    monthlyReports: window.state.monthlyReports,
-                    holidays: window.state.holidays
-                }));
-                renderApp();
-            }
-        }
-
-        window.addActivity = async () => {
-            const data = {
-                month: window.state.selectedMonth,
-                type: 'Evento Interno', eventName: '', audience: 'Interno', link: '',
-                date: '', time: '', postName: '', postOccurrence: '', postAction: '',
-                satisfaction: '', status: 'Planejado'
-            };
-            if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), data);
-            else { data.id = Date.now().toString(); window.state.activities.push(data); saveLocal(); }
-        };
-        window.updateUnifiedActivity = async (id, field, value) => {
-            if (window.state.mode === 'firebase') await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [field]: value });
-            else { const item = window.state.activities.find(x => x.id === id); if(item) { item[field] = value; saveLocal(); } }
-        };
-        window.requestDeleteActivity = (id) => window.openConfirmModal("Excluir ação?", async () => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id));
-            else { window.state.activities = window.state.activities.filter(x => x.id !== id); saveLocal(); }
-        });
-
-        window.addCrisis = async () => {
-            const data = {
-                date: new Date().toISOString().split('T')[0],
-                riskLevel: 'Sem relevância crítica', origin: 'Interno', sector: 'Comunicação', responsible: 'Vera Nascimento',
-                correctiveAction: '', risks: '', learning: '', improvement: ''
-            };
-            if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), data);
-            else { data.id = Date.now().toString(); window.state.crises.push(data); saveLocal(); }
-        };
-        window.updateUnifiedCrisis = async (id, field, value) => {
-            if (window.state.mode === 'firebase') await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [field]: value });
-            else { const item = window.state.crises.find(x => x.id === id); if(item) { item[field] = value; saveLocal(); } }
-        };
-        window.requestDeleteCrisis = (id) => window.openConfirmModal("Excluir registro?", async () => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id));
-            else { window.state.crises = window.state.crises.filter(x => x.id !== id); saveLocal(); }
-        });
-
-        window.addNotification = async () => {
-            const input = document.getElementById('new-notification');
-            if(input && input.value.trim()) {
-                const data = { text: input.value, timestamp: new Date().toISOString() };
-                if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), data);
-                else { data.id = Date.now().toString(); window.state.notifications.unshift(data); saveLocal(); }
-                input.value = '';
-            }
-        };
-        window.deleteNotification = async (id) => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
-            else { window.state.notifications = window.state.notifications.filter(x => x.id !== id); saveLocal(); }
-        };
-
-        window.addHoliday = async () => {
-            const dayInput = document.getElementById('holiday-day');
-            const nameInput = document.getElementById('holiday-name');
-            if (dayInput && nameInput && dayInput.value && nameInput.value) {
-                const data = { month: window.state.selectedMonth, day: dayInput.value, name: nameInput.value };
-                if (window.state.mode === 'firebase') await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), data);
-                else { data.id = Date.now().toString(); window.state.holidays.push(data); saveLocal(); }
-            }
-        };
-        window.removeHoliday = (id) => window.openConfirmModal("Apagar data?", async () => {
-            if (window.state.mode === 'firebase') await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
-            else { window.state.holidays = window.state.holidays.filter(x => x.id !== id); saveLocal(); }
-        });
-
-        window.updateUnifiedReport = async (monthId, field, value) => {
-            if (window.state.mode === 'firebase') await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', monthId.toString()), { [field]: value }, { merge: true });
-            else {
-                if(!window.state.monthlyReports[monthId]) window.state.monthlyReports[monthId] = {};
-                window.state.monthlyReports[monthId][field] = value;
-                saveLocal();
-            }
-        };
-        window.requestClearReport = () => window.openConfirmModal("Limpar relatório?", async () => {
-            if (window.state.mode === 'firebase') await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', window.state.selectedMonth.toString()), { explanation: '', highlights: '', suggestions: '' });
-            else {
-                if(window.state.monthlyReports[window.state.selectedMonth]) window.state.monthlyReports[window.state.selectedMonth] = { explanation: '', highlights: '', suggestions: '' };
-                saveLocal();
-            }
-        });
-
-        window.generateAutoText = () => {
-            const monthActs = window.state.activities.filter(a => a.month === window.state.selectedMonth);
-            const total = monthActs.length;
-            const completed = monthActs.filter(a => a.status === 'Concluído').length;
-            const efficiency = total > 0 ? Math.round((completed/total)*100) : 0;
-            const text = `ANÁLISE DE ENTREGAS - ${MONTHS_DATA[window.state.selectedMonth].name.toUpperCase()}\n\nO mês encerrou com ${total} ações planejadas e ${completed} metas atingidas. Eficiência: ${efficiency}%.`;
-            window.updateUnifiedReport(window.state.selectedMonth, 'explanation', text);
-        };
-        window.generateHighlights = () => {
-            const completedActs = window.state.activities.filter(a => a.month === window.state.selectedMonth && a.status === 'Concluído');
-            let text = "RESULTADOS CONSOLIDADOS:\n\n";
-            if (completedActs.length === 0) text += "- Nenhuma atividade concluída.";
-            else completedActs.forEach(act => text += `• ${act.type}: "${act.eventName || 'Evento'}" - Satisfação: ${act.satisfaction || '0'}%\n`);
-            window.updateUnifiedReport(window.state.selectedMonth, 'highlights', text);
-        };
-
-        // --- 5. INICIALIZAÇÃO ---
+        // --- 4. INICIALIZAÇÃO E FIREBASE ---
         async function initSystem() {
-            const hasConfig = Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey;
+            const dateEl = document.getElementById('print-date');
+            if(dateEl) dateEl.innerText = new Date().toLocaleDateString();
+
+            // Tenta carregar dados locais primeiro para garantir que a tela abra
+            const localData = localStorage.getItem(DB_KEY);
+            if (localData) {
+                try {
+                    const parsed = JSON.parse(localData);
+                    window.state.activities = parsed.activities || [];
+                    window.state.crises = parsed.crises || [];
+                    window.state.notifications = parsed.notifications || [];
+                    window.state.monthlyReports = parsed.monthlyReports || {};
+                    window.state.holidays = parsed.holidays || window.state.holidays;
+                } catch(e) { console.error("Erro dados locais:", e); }
+            }
             
+            // Renderiza imediatamente com dados locais
+            renderApp();
+            document.getElementById('connection-status').innerText = 'Modo Local (Iniciando...)';
+
+            // Tenta conectar Firebase em segundo plano
+            const hasConfig = Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey;
             if (hasConfig) {
                 try {
                     const app = initializeApp(firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
                     
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-                    else await signInAnonymously(auth);
-                    
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
                     onAuthStateChanged(auth, (user) => {
                         if (user) {
                             window.state.mode = 'firebase';
-                            updateStatus('Online');
+                            document.getElementById('connection-status').innerText = 'Online (Sincronizado)';
                             setupRealtimeListeners();
-                            renderApp();
                         }
                     });
                 } catch (e) {
-                    console.error("Erro Firebase, usando local:", e);
-                    enableLocalMode();
+                    console.error("Firebase unavailable, staying local:", e);
+                    document.getElementById('connection-status').innerText = 'Modo Local (Offline)';
                 }
             } else {
-                enableLocalMode();
+                document.getElementById('connection-status').innerText = 'Modo Local';
             }
-        }
-
-        function enableLocalMode() {
-            window.state.mode = 'local';
-            updateStatus('Modo Local');
-            const localData = localStorage.getItem(DB_KEY);
-            if (localData) {
-                const parsed = JSON.parse(localData);
-                window.state.activities = parsed.activities || [];
-                window.state.crises = parsed.crises || [];
-                window.state.notifications = parsed.notifications || [];
-                window.state.monthlyReports = parsed.monthlyReports || {};
-                window.state.holidays = parsed.holidays || window.state.holidays;
-            }
-            renderApp();
-        }
-
-        function updateStatus(text) {
-            const el = document.getElementById('connection-status');
-            if(el) el.innerText = text;
         }
 
         function setupRealtimeListeners() {
@@ -629,13 +560,11 @@
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), (s) => { const r = {}; s.docs.forEach(d => r[d.id] = d.data()); window.state.monthlyReports = r; renderApp(); });
         }
 
-        // Start
-        document.addEventListener('DOMContentLoaded', () => {
-            const d = document.getElementById('print-date');
-            if(d) d.innerText = new Date().toLocaleDateString();
-            initSystem();
-        });
+        // Iniciar
+        initSystem();
 
     </script>
 </body>
 </html>
+
+       
