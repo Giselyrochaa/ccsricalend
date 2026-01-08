@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
@@ -27,7 +26,6 @@
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Estilos de Impressão Retrato A4 */
         @media print {
             @page { margin: 0.8cm; size: portrait; }
             body { background-color: white; font-size: 10px; }
@@ -39,7 +37,6 @@
             input, select, textarea { border: none !important; background: transparent !important; appearance: none; }
         }
 
-        /* Navegação Institucional */
         .nav-btn-active { 
             background-color: #ffffff !important; 
             color: #1e3a8a !important; 
@@ -51,8 +48,6 @@
 
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-        
-        .status-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 9999px; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
@@ -72,7 +67,6 @@
         </div>
     </div>
 
-    <!-- Header Institucional Evereste -->
     <header class="bg-blue-900 text-white shadow-xl sticky top-0 z-40 no-print flex-shrink-0">
         <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
             <div class="flex items-center gap-4">
@@ -83,7 +77,6 @@
                 </div>
             </div>
 
-            <!-- Navegação Principal -->
             <nav class="hidden lg:flex gap-1 bg-blue-800/40 p-1.5 rounded-2xl border border-blue-700/30">
                 <button onclick="window.changeView('dashboard')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="dashboard">Início</button>
                 <button onclick="window.changeView('month')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="month">Ações do Mês</button>
@@ -93,15 +86,14 @@
             </nav>
 
             <div class="flex items-center gap-4">
-                <div id="connection-status-container" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-950/50 rounded-xl border border-blue-800/50">
+                <div id="connection-status-container" class="flex items-center gap-2 px-4 py-2 bg-blue-950/50 rounded-xl border border-blue-800/50">
                     <span id="conn-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
-                    <span id="conn-text" class="text-[10px] font-black uppercase tracking-widest text-blue-100">Sync</span>
+                    <span id="conn-text" class="text-[10px] font-black uppercase tracking-widest text-blue-100">Sync...</span>
                 </div>
                 <button class="lg:hidden p-2 text-white bg-blue-800 rounded-xl" onclick="window.toggleMobileMenu()"><i data-lucide="menu"></i></button>
             </div>
         </div>
 
-        <!-- Mobile Menu Overlay -->
         <div id="mobile-menu" class="hidden lg:hidden bg-blue-800 border-t border-blue-700 px-4 py-4 space-y-2 shadow-2xl animate-fadeIn">
             <button onclick="window.changeView('dashboard'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest border-b border-blue-700/50">Dashboard</button>
             <button onclick="window.changeView('month'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest border-b border-blue-700/50">Ações do Mês</button>
@@ -111,26 +103,22 @@
         </div>
     </header>
 
-    <!-- Área de Conteúdo -->
     <main id="app-content" class="flex-1 overflow-y-auto max-w-7xl mx-auto w-full px-4 py-8 custom-scrollbar">
         <div id="initial-loader" class="flex flex-col items-center justify-center py-40 text-slate-400">
             <div class="animate-spin rounded-full h-14 w-14 border-b-2 border-blue-900 mb-6"></div>
-            <p class="font-black uppercase tracking-[0.3em] text-[10px]">A sincronizar dados...</p>
+            <p class="font-black uppercase tracking-[0.3em] text-[10px]">A sincronizar sistema...</p>
         </div>
     </main>
 
-    <!-- Footer Impressão -->
     <footer class="hidden print:block text-center text-[9px] text-gray-400 mt-10 border-t pt-4">
         Documento Oficial Instituto Evereste - Gerado em <span id="print-date"></span>
     </footer>
 
-    <!-- Scripts do Sistema -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- AMBIENTE E CONFIGURAÇÃO ---
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'evereste-gestao-2026-v1';
 
@@ -166,7 +154,6 @@
 
         let db, auth;
 
-        // --- DEFINIÇÕES DE TEMPLATE ---
         window.templates = {
             dashboard: () => {
                 const acts = window.state.activities;
@@ -399,7 +386,6 @@
             }
         };
 
-        // --- LÓGICA DE INTERAÇÃO ---
         window.changeView = (v) => { window.state.view = v; window.renderApp(); };
         window.toggleMobileMenu = () => document.getElementById('mobile-menu')?.classList.toggle('hidden');
         window.closeModal = () => document.getElementById('modal-overlay')?.classList.add('hidden');
@@ -409,53 +395,55 @@
             t.innerText = msg; b.onclick = () => { cb(); window.closeModal(); }; m.classList.remove('hidden');
         };
 
-        // CRUD Ops
+        // Database
         window.addAct = async () => {
-            if (!auth.currentUser) return;
-            const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '2026-01-01', time: '09:00', eventSector: 'Comunicação', postOccurrence: '', individualGoal: 0, satisfaction: 0, status: 'Planejado', createdAt: new Date().toISOString() };
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), d);
+            try {
+                const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '2026-01-01', time: '09:00', eventSector: 'Comunicação', postOccurrence: '', individualGoal: 0, satisfaction: 0, status: 'Planejado', createdAt: new Date().toISOString() };
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), d);
+            } catch (err) { console.error("Falha ao adicionar ação:", err); }
         };
+
         window.saveAct = async (id, f, v) => {
-            if (!auth.currentUser) return;
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [f]: v });
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [f]: v });
+            } catch (err) { console.error("Falha ao salvar:", err); }
         };
+
         window.delActReq = (id) => window.openConfirm("Deseja eliminar esta ação para todos?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id)));
 
         window.addCrisis = async () => {
-            if (!auth.currentUser) return;
-            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Moderada', sector: 'Comunicação', responsible: 'Admin', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), d);
+            try {
+                const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Moderada', sector: 'Comunicação', responsible: 'Admin', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), d);
+            } catch (err) { console.error("Falha ao adicionar crise:", err); }
         };
+
         window.saveCrisis = async (id, f, v) => {
-            if (!auth.currentUser) return;
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [f]: v });
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [f]: v });
+            } catch (err) { console.error("Falha ao salvar:", err); }
         };
+
         window.delCrisisReq = (id) => window.openConfirm("Eliminar registo de crise?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id)));
 
         window.sendNotif = async () => {
-            if (!auth.currentUser) return;
             const i = document.getElementById('notif-input');
-            if(i?.value.trim()) { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), { text: i.value, timestamp: new Date().toISOString(), author: 'Admin' }); i.value = ''; }
-        };
-        window.delNotif = async (id) => {
-            if (!auth.currentUser) return;
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+            if(i?.value.trim()) { 
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), { text: i.value, timestamp: new Date().toISOString(), author: 'Admin' }); 
+                i.value = ''; 
+            }
         };
 
+        window.delNotif = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+
         window.addHoliday = async () => {
-            if (!auth.currentUser) return;
             const d = document.getElementById('h-day')?.value, n = document.getElementById('h-name')?.value;
             if(d && n) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), { month: window.state.selectedMonth, day: d.padStart(2,'0'), name: n });
         };
-        window.delHold = async (id) => {
-            if (!auth.currentUser) return;
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
-        };
 
-        window.saveRep = async (m, f, v) => {
-            if (!auth.currentUser) return;
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', m.toString()), { [f]: v }, { merge: true });
-        };
+        window.delHold = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
+
+        window.saveRep = async (m, f, v) => await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', m.toString()), { [f]: v }, { merge: true });
         
         window.autoGenRep = () => {
             const m = MONTHS_DATA[window.state.selectedMonth];
@@ -468,24 +456,30 @@
 
         window.exportPDF = () => setTimeout(() => window.print(), 100);
 
-        // --- RENDERIZADOR ---
         window.renderApp = () => {
             const content = document.getElementById('app-content');
             if(!content) return;
 
-            // Sync Nav UI
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = `nav-btn px-5 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${btn.dataset.view === window.state.view ? 'nav-btn-active' : 'nav-btn-inactive'}`;
-            });
+            // Previne re-render total se o utilizador estiver a digitar num campo de texto (importante para não perder o foco)
+            const focused = document.activeElement;
+            const isTyping = focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA');
 
-            const template = window.templates[window.state.view];
-            if(template) content.innerHTML = template();
-            
-            lucide.createIcons();
-            document.getElementById('initial-loader')?.classList.add('hidden');
+            // Se for dashboard ou lista, re-renderizamos. Se for relatório, apenas se não estiver a editar.
+            if(isTyping && (window.state.view === 'reports' || window.state.view === 'month')) {
+               // Apenas atualizamos ícones se necessário ou aguardamos o blur
+            } else {
+                const template = window.templates[window.state.view];
+                if(template) content.innerHTML = template();
+                
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.className = `nav-btn px-5 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${btn.dataset.view === window.state.view ? 'nav-btn-active' : 'nav-btn-inactive'}`;
+                });
+
+                lucide.createIcons();
+                document.getElementById('initial-loader')?.classList.add('hidden');
+            }
         };
 
-        // --- SETUP FIREBASE ---
         async function setup() {
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
@@ -499,52 +493,37 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) { 
-                console.error("Auth Error:", e); 
-            }
+            } catch (e) { console.error("Erro Autenticação:", e); }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    const dot = document.getElementById('conn-dot');
-                    const text = document.getElementById('conn-text');
-                    if(dot) dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-                    if(text) text.innerText = "CONECTADO";
+                    document.getElementById('conn-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                    document.getElementById('conn-text').innerText = "CONECTADO";
                     
-                    // Real-time Listeners
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), s => { 
-                        window.state.activities = s.docs.map(d => ({id: d.id, ...d.data()})); 
-                        window.renderApp(); 
-                    }, (err) => console.error("Firestore error:", err));
-                    
+                        window.state.activities = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); 
+                    });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), s => { 
-                        window.state.crises = s.docs.map(d => ({id: d.id, ...d.data()})); 
-                        window.renderApp(); 
-                    }, (err) => console.error("Firestore error:", err));
-                    
+                        window.state.crises = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); 
+                    });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), s => { 
-                        window.state.notifications = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); 
-                        window.renderApp(); 
-                    }, (err) => console.error("Firestore error:", err));
-                    
+                        window.state.notifications = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); window.renderApp(); 
+                    });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), s => { 
-                        window.state.holidays = s.docs.map(d => ({id: d.id, ...d.data()})); 
-                        window.renderApp(); 
-                    }, (err) => console.error("Firestore error:", err));
-                    
+                        window.state.holidays = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); 
+                    });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), s => { 
-                        const r = {}; 
-                        s.docs.forEach(d => r[d.id] = d.data()); 
-                        window.state.monthlyReports = r; 
-                        window.renderApp(); 
-                    }, (err) => console.error("Firestore error:", err));
+                        const r = {}; s.docs.forEach(d => r[d.id] = d.data()); window.state.monthlyReports = r; window.renderApp(); 
+                    });
                 }
             });
         }
 
-        window.onload = setup;
+        setup(); // Inicia imediatamente
     </script>
 </body>
 </html>
+
 
 
 
