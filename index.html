@@ -30,12 +30,12 @@
         @media print {
             @page { margin: 0.8cm; size: portrait; }
             body { background-color: white; font-size: 10px; }
-            header, .no-print, .nav-container, #connection-status { display: none !important; }
+            header, .no-print, .nav-container, #connection-status-container { display: none !important; }
             #app-content { width: 100% !important; display: block !important; margin: 0 !important; padding: 0 !important; }
             .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; break-inside: avoid; }
             table { font-size: 8px; width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #e2e8f0 !important; padding: 4px !important; word-wrap: break-word; }
-            input, select, textarea { border: none !important; background: transparent !important; }
+            input, select, textarea { border: none !important; background: transparent !important; appearance: none; }
         }
 
         /* Navegação Institucional */
@@ -125,11 +125,11 @@
 
     <!-- Scripts do Sistema -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- CONFIGURAÇÃO ---
+        // --- AMBIENTE E CONFIGURAÇÃO ---
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'evereste-gestao-2026-v1';
 
@@ -166,7 +166,6 @@
         let db, auth;
 
         // --- DEFINIÇÕES DE TEMPLATE ---
-
         window.templates = {
             dashboard: () => {
                 const acts = window.state.activities;
@@ -190,7 +189,7 @@
                                     ${top.map(t => `<div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                         <div class="truncate pr-4"><p class="text-xs font-black text-slate-800 truncate">${t.eventName || 'S/ Nome'}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${t.type}</p></div>
                                         <span class="text-sm font-black text-emerald-600">${t.satisfaction}%</span>
-                                    </div>`).join('') || '<p class="text-center py-10 text-slate-300 italic text-sm">A carregar avaliações...</p>'}
+                                    </div>`).join('') || '<p class="text-center py-10 text-slate-300 italic text-sm">Sem avaliações...</p>'}
                                 </div>
                             </div>
                             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
@@ -264,7 +263,7 @@
                                                 </td>
                                                 <td class="px-6 py-4">
                                                     <div class="flex flex-col gap-1">
-                                                        <input type="date" value="${a.date || ''}" min="2026-01-01" max="2026-12-31" onchange="window.saveAct('${a.id}', 'date', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-xs font-black">
+                                                        <input type="date" value="${a.date || ''}" onchange="window.saveAct('${a.id}', 'date', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-xs font-black">
                                                         <input type="time" value="${a.time || ''}" onchange="window.saveAct('${a.id}', 'time', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-xs font-black">
                                                     </div>
                                                 </td>
@@ -317,7 +316,7 @@
                             ${MONTHS_DATA.map(m => {
                                 const mActs = window.state.activities.filter(a => parseInt(a.month) === m.id);
                                 return `
-                                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col min-h-[220px] print-break-inside-avoid">
+                                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col min-h-[220px] break-inside-avoid">
                                         <div class="px-5 py-4 ${m.color} bg-slate-50/80 border-b flex justify-between items-center">
                                             <h3 class="font-black text-xs uppercase tracking-tighter text-slate-700">${m.name}</h3>
                                             <span class="text-[9px] font-black bg-white border px-2 py-0.5 rounded-full text-slate-500">${mActs.length} AÇÕES</span>
@@ -344,7 +343,7 @@
                         </div>
                         <div class="grid gap-6">
                             ${window.state.crises.map(c => `
-                                <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 relative print-break-inside-avoid">
+                                <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 relative break-inside-avoid">
                                     <button onclick="window.delCrisisReq('${c.id}')" class="absolute top-8 right-8 text-slate-200 hover:text-red-600 transition no-print"><i data-lucide="trash-2" size="20"></i></button>
                                     <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 border-b border-slate-50 pb-8">
                                         <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Data</label><input type="date" value="${c.date}" onchange="window.saveCrisis('${c.id}', 'date', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-3 text-xs font-black"></div>
@@ -354,7 +353,7 @@
                                         <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Setor Responsável</label><select onchange="window.saveCrisis('${c.id}', 'sector', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-3 text-xs font-black uppercase">
                                             ${SECTORS.map(s => `<option ${c.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
                                         </select></div>
-                                        <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Registado por</label><input type="text" value="Vera Nascimento" readonly class="w-full border-none bg-slate-100/50 rounded-xl p-3 text-xs font-bold text-slate-400 cursor-not-allowed"></div>
+                                        <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Registado por</label><input type="text" value="Sistema Evereste" readonly class="w-full border-none bg-slate-100/50 rounded-xl p-3 text-xs font-bold text-slate-400 cursor-not-allowed"></div>
                                     </div>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div class="p-6 bg-red-50/50 rounded-3xl border border-red-100/50"><label class="block text-[10px] font-black text-red-800 uppercase tracking-widest mb-4">Plano de Acção e Ocorrência</label><textarea onblur="window.saveCrisis('${c.id}', 'correctiveAction', this.value)" class="w-full bg-white border-none rounded-2xl p-4 text-sm h-32 shadow-inner resize-none font-medium text-slate-700 leading-relaxed" placeholder="Detalhes do ocorrido e ações imediatas...">${c.correctiveAction || ''}</textarea></div>
@@ -399,10 +398,8 @@
             }
         };
 
-        // --- LÓGICA DE INTERAÇÃO GLOBAL ---
-
+        // --- LÓGICA DE INTERAÇÃO ---
         window.changeView = (v) => { window.state.view = v; window.renderApp(); };
-        window.changeMonth = (m) => { window.state.selectedMonth = m; window.renderApp(); };
         window.toggleMobileMenu = () => document.getElementById('mobile-menu')?.classList.toggle('hidden');
         window.closeModal = () => document.getElementById('modal-overlay')?.classList.add('hidden');
         
@@ -411,73 +408,89 @@
             t.innerText = msg; b.onclick = () => { cb(); window.closeModal(); }; m.classList.remove('hidden');
         };
 
-        // Database Ops
+        // CRUD Ops
         window.addAct = async () => {
+            if (!auth.currentUser) return;
             const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '2026-01-01', time: '09:00', eventSector: 'Comunicação', postOccurrence: '', individualGoal: 0, satisfaction: 0, status: 'Planejado', createdAt: new Date().toISOString() };
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), d);
         };
-        window.saveAct = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [f]: v });
+        window.saveAct = async (id, f, v) => {
+            if (!auth.currentUser) return;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [f]: v });
+        };
         window.delActReq = (id) => window.openConfirm("Deseja eliminar esta ação para todos?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id)));
 
         window.addCrisis = async () => {
-            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Moderada', sector: 'Comunicação', responsible: 'Vera Nascimento', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
+            if (!auth.currentUser) return;
+            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Moderada', sector: 'Comunicação', responsible: 'Admin', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), d);
         };
-        window.saveCrisis = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [f]: v });
+        window.saveCrisis = async (id, f, v) => {
+            if (!auth.currentUser) return;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [f]: v });
+        };
         window.delCrisisReq = (id) => window.openConfirm("Eliminar registo de crise?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id)));
 
         window.sendNotif = async () => {
+            if (!auth.currentUser) return;
             const i = document.getElementById('notif-input');
             if(i?.value.trim()) { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), { text: i.value, timestamp: new Date().toISOString(), author: 'Admin' }); i.value = ''; }
         };
-        window.delNotif = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+        window.delNotif = async (id) => {
+            if (!auth.currentUser) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+        };
 
         window.addHoliday = async () => {
+            if (!auth.currentUser) return;
             const d = document.getElementById('h-day')?.value, n = document.getElementById('h-name')?.value;
             if(d && n) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), { month: window.state.selectedMonth, day: d.padStart(2,'0'), name: n });
         };
-        window.delHold = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
+        window.delHold = async (id) => {
+            if (!auth.currentUser) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
+        };
 
-        window.saveRep = async (m, f, v) => await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', m.toString()), { [f]: v }, { merge: true });
+        window.saveRep = async (m, f, v) => {
+            if (!auth.currentUser) return;
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', m.toString()), { [f]: v }, { merge: true });
+        };
+        
         window.autoGenRep = () => {
+            const m = MONTHS_DATA[window.state.selectedMonth];
             const acts = window.state.activities.filter(a => parseInt(a.month) === window.state.selectedMonth);
             const done = acts.filter(a => a.status === 'Concluído' || a.status === 'Realizado').length;
-            const txt = `Durante o período de ${MONTHS_DATA[window.state.selectedMonth].name} de 2026, o Setor de Comunicação do Instituto Evereste executou ${acts.length} ações coordenadas. Obtivemos a conclusão bem-sucedida de ${done} metas, com uma taxa de eficiência de ${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%. O fluxo institucional mantém-se estável e alinhado com o plano de gestão anual.`;
+            const txt = `Durante o período de ${m.name} de 2026, o Setor de Comunicação do Instituto Evereste executou ${acts.length} ações coordenadas. Obtivemos a conclusão de ${done} metas, com uma taxa de eficiência de ${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%. O fluxo institucional mantém-se estável e alinhado com o plano de gestão anual.`;
             window.saveRep(window.state.selectedMonth, 'explanation', txt);
             window.renderApp();
         };
 
         window.exportPDF = () => setTimeout(() => window.print(), 100);
-        window.handleSave = () => {
-            const btn = event.target.closest('button'), orig = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="cloud-check"></i> Sync OK';
-            btn.classList.add('bg-green-700');
-            setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-green-700'); lucide.createIcons(); }, 1500);
-        };
 
-        // --- MOTOR DE RENDERIZAÇÃO ---
+        // --- RENDERIZADOR ---
         window.renderApp = () => {
             const content = document.getElementById('app-content');
             if(!content) return;
 
-            // Nav Sync
+            // Sync Nav UI
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.className = `nav-btn px-5 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${btn.dataset.view === window.state.view ? 'nav-btn-active' : 'nav-btn-inactive'}`;
             });
 
             const template = window.templates[window.state.view];
             if(template) content.innerHTML = template();
+            
             lucide.createIcons();
             document.getElementById('initial-loader')?.classList.add('hidden');
         };
 
-        // --- INICIALIZAÇÃO ---
+        // --- SETUP FIREBASE ---
         async function setup() {
             const app = initializeApp(firebaseConfig);
-            auth = getAuth(app); // CORRECÇÃO: Declarado e inicializado correctamente
+            auth = getAuth(app);
             db = getFirestore(app);
 
-            document.getElementById('print-date').innerText = new Date().toLocaleDateString();
+            document.getElementById('print-date').innerText = new Date().toLocaleDateString('pt-PT');
 
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -485,26 +498,52 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) { console.warn("Firebase Auth Fallback", e); }
+            } catch (e) { 
+                console.error("Auth Error:", e); 
+            }
 
-            onAuthStateChanged(auth, (u) => {
-                if (u) {
-                    document.getElementById('conn-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-                    document.getElementById('conn-text').innerText = "CONECTADO";
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const dot = document.getElementById('conn-dot');
+                    const text = document.getElementById('conn-text');
+                    if(dot) dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                    if(text) text.innerText = "CONECTADO";
                     
-                    // Listeners Real-time
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), s => { window.state.activities = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), s => { window.state.crises = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), s => { window.state.notifications = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); window.renderApp(); });
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), s => { window.state.holidays = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
-                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), s => { const r = {}; s.docs.forEach(d => r[d.id] = d.data()); window.state.monthlyReports = r; window.renderApp(); });
+                    // Real-time Listeners
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), s => { 
+                        window.state.activities = s.docs.map(d => ({id: d.id, ...d.data()})); 
+                        window.renderApp(); 
+                    }, (err) => console.error("Firestore error:", err));
+                    
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), s => { 
+                        window.state.crises = s.docs.map(d => ({id: d.id, ...d.data()})); 
+                        window.renderApp(); 
+                    }, (err) => console.error("Firestore error:", err));
+                    
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), s => { 
+                        window.state.notifications = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); 
+                        window.renderApp(); 
+                    }, (err) => console.error("Firestore error:", err));
+                    
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), s => { 
+                        window.state.holidays = s.docs.map(d => ({id: d.id, ...d.data()})); 
+                        window.renderApp(); 
+                    }, (err) => console.error("Firestore error:", err));
+                    
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), s => { 
+                        const r = {}; 
+                        s.docs.forEach(d => r[d.id] = d.data()); 
+                        window.state.monthlyReports = r; 
+                        window.renderApp(); 
+                    }, (err) => console.error("Firestore error:", err));
                 }
             });
         }
 
-        setup();
+        window.onload = setup;
     </script>
 </body>
 </html>
+
 
 
