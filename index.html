@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assessoria de Comunicação Evereste</title>
+    <title>Gestão de Comunicação - Instituto Evereste</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,101 +12,109 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             color: #0f172a;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Impressão Otimizada */
+        /* Estilos de Impressão Retrato A4 */
         @media print {
-            @page { margin: 0.5cm; size: portrait; }
+            @page { margin: 0.8cm; size: portrait; }
+            body { background-color: white; font-size: 10px; }
             header, .no-print, .nav-container, #connection-status { display: none !important; }
             #app-content { width: 100% !important; display: block !important; margin: 0 !important; padding: 0 !important; }
+            .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; break-inside: avoid; }
             table { font-size: 8px; width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #e2e8f0 !important; padding: 4px !important; }
-            .print-break-inside-avoid { break-inside: avoid; }
+            th, td { border: 1px solid #e2e8f0 !important; padding: 4px !important; word-wrap: break-word; }
+            input, select, textarea { border: none !important; background: transparent !important; }
         }
 
+        /* Navegação Institucional */
         .nav-btn-active { 
             background-color: #ffffff !important; 
             color: #1e3a8a !important; 
-            font-weight: 700; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            font-weight: 800; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
         }
-        .nav-btn-inactive { color: #dbeafe !important; }
-        .nav-btn-inactive:hover { background-color: #1d4ed8 !important; }
+        .nav-btn-inactive { color: #dbeafe !important; opacity: 0.8; }
+        .nav-btn-inactive:hover { background-color: #1d4ed8 !important; opacity: 1; }
 
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+        
+        .status-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 9999px; }
     </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <!-- Overlay de Confirmação -->
-    <div id="modal-overlay" class="fixed inset-0 flex items-center justify-center z-[100] hidden no-print bg-black/40 backdrop-blur-sm">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full border border-red-100 animate-fadeIn">
-            <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-                <i data-lucide="alert-triangle" class="text-red-500"></i> Confirmação
-            </h3>
-            <p id="modal-message" class="text-gray-600 mb-6 text-sm">Deseja apagar este registo?</p>
+    <!-- Modal de Confirmação -->
+    <div id="modal-overlay" class="fixed inset-0 flex items-center justify-center z-[100] hidden no-print bg-black/50 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-red-100 animate-fadeIn">
+            <div class="flex items-center gap-3 text-red-600 mb-4">
+                <i data-lucide="alert-circle" size="24"></i>
+                <h3 class="text-lg font-extrabold tracking-tight">Confirmar Exclusão</h3>
+            </div>
+            <p id="modal-message" class="text-slate-600 mb-8 text-sm leading-relaxed">Deseja apagar este registo permanentemente do painel unificado?</p>
             <div class="flex justify-end gap-3">
-                <button onclick="window.closeModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium">Cancelar</button>
-                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm text-sm font-bold">Apagar</button>
+                <button onclick="window.closeModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-xl text-sm font-bold transition">Cancelar</button>
+                <button id="modal-confirm-btn" class="px-6 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-lg text-sm font-black transition">APAGAR</button>
             </div>
         </div>
     </div>
 
-    <!-- Header Fixo -->
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40 no-print">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-blue-900 font-black shadow-sm">AE</div>
+    <!-- Header Institucional Evereste -->
+    <header class="bg-blue-900 text-white shadow-xl sticky top-0 z-40 no-print flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-900 font-black shadow-lg shadow-blue-950/20 text-xl">IE</div>
                 <div>
-                    <h1 class="text-lg font-bold leading-none tracking-tight">Instituto Evereste</h1>
-                    <p class="text-[10px] text-blue-300 uppercase font-bold tracking-widest mt-0.5">Gestão 2026</p>
+                    <h1 class="text-xl font-extrabold leading-none tracking-tighter uppercase">Instituto Evereste</h1>
+                    <p class="text-[10px] text-blue-300 uppercase font-black tracking-[0.2em] mt-1">Setor de Comunicação • 2026</p>
                 </div>
             </div>
 
-            <nav class="hidden md:flex gap-1 bg-blue-800/40 p-1 rounded-xl">
-                <button onclick="window.changeView('dashboard')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="dashboard">Dashboard</button>
-                <button onclick="window.changeView('month')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="month">Ações</button>
-                <button onclick="window.changeView('calendar')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="calendar">Calendário</button>
-                <button onclick="window.changeView('reports')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="reports">Relatórios</button>
-                <button onclick="window.changeView('crisis')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="crisis">Riscos</button>
+            <!-- Navegação Principal -->
+            <nav class="hidden lg:flex gap-1 bg-blue-800/40 p-1.5 rounded-2xl border border-blue-700/30">
+                <button onclick="window.changeView('dashboard')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="dashboard">Início</button>
+                <button onclick="window.changeView('month')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="month">Ações do Mês</button>
+                <button onclick="window.changeView('calendar')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="calendar">Calendário Anual</button>
+                <button onclick="window.changeView('reports')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="reports">Relatórios</button>
+                <button onclick="window.changeView('crisis')" class="nav-btn px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all" data-view="crisis">Riscos & Crises</button>
             </nav>
 
-            <div class="flex items-center gap-3">
-                <div id="connection-status" class="flex items-center gap-1.5 px-3 py-1 bg-blue-800/50 rounded-full border border-blue-700/50">
-                    <span id="conn-dot" class="w-2 h-2 rounded-full bg-yellow-400"></span>
-                    <span id="conn-text" class="text-[9px] font-bold uppercase tracking-tighter">Sync...</span>
+            <div class="flex items-center gap-4">
+                <div id="connection-status-container" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-950/50 rounded-xl border border-blue-800/50">
+                    <span id="conn-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                    <span id="conn-text" class="text-[10px] font-black uppercase tracking-widest text-blue-100">Sync</span>
                 </div>
-                <button class="md:hidden p-2 text-white bg-blue-800 rounded-lg" onclick="window.toggleMobileMenu()"><i data-lucide="menu"></i></button>
+                <button class="lg:hidden p-2 text-white bg-blue-800 rounded-xl" onclick="window.toggleMobileMenu()"><i data-lucide="menu"></i></button>
             </div>
         </div>
 
-        <!-- Menu Mobile -->
-        <div id="mobile-menu" class="hidden md:hidden bg-blue-800 border-t border-blue-700 px-4 py-3 space-y-1 shadow-inner">
-            <button onclick="window.changeView('dashboard'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50 uppercase tracking-tighter">Dashboard</button>
-            <button onclick="window.changeView('month'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50 uppercase tracking-tighter">Ações do Mês</button>
-            <button onclick="window.changeView('calendar'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50 uppercase tracking-tighter">Calendário Anual</button>
-            <button onclick="window.changeView('reports'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50 uppercase tracking-tighter">Relatórios</button>
-            <button onclick="window.changeView('crisis'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm uppercase tracking-tighter">Riscos & Crises</button>
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-blue-800 border-t border-blue-700 px-4 py-4 space-y-2 shadow-2xl animate-fadeIn">
+            <button onclick="window.changeView('dashboard'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest border-b border-blue-700/50">Dashboard</button>
+            <button onclick="window.changeView('month'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest border-b border-blue-700/50">Ações do Mês</button>
+            <button onclick="window.changeView('calendar'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest border-b border-blue-700/50">Calendário Anual</button>
+            <button onclick="window.changeView('reports'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest border-b border-blue-700/50">Relatórios & Metas</button>
+            <button onclick="window.changeView('crisis'); window.toggleMobileMenu()" class="block w-full text-left py-4 px-5 text-white font-black text-xs uppercase tracking-widest">Riscos & Crises</button>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main id="app-content" class="max-w-7xl mx-auto px-4 py-6 w-full flex-1 overflow-y-auto">
-        <div class="flex flex-col items-center justify-center py-40 text-slate-400">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mb-4"></div>
-            <p class="font-bold uppercase tracking-widest text-xs">A ligar ao painel unificado...</p>
+    <!-- Área de Conteúdo -->
+    <main id="app-content" class="flex-1 overflow-y-auto max-w-7xl mx-auto w-full px-4 py-8 custom-scrollbar">
+        <div id="initial-loader" class="flex flex-col items-center justify-center py-40 text-slate-400">
+            <div class="animate-spin rounded-full h-14 w-14 border-b-2 border-blue-900 mb-6"></div>
+            <p class="font-black uppercase tracking-[0.3em] text-[10px]">A sincronizar dados...</p>
         </div>
     </main>
 
@@ -115,34 +123,15 @@
         Documento Oficial Instituto Evereste - Gerado em <span id="print-date"></span>
     </footer>
 
+    <!-- Scripts do Sistema -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-        // --- CONSTANTES ---
-        const MONTHS_DATA = [
-            { id: 0, name: 'Janeiro', color: 'border-l-4 border-gray-300' },
-            { id: 1, name: 'Fevereiro', color: 'border-l-4 border-purple-400' },
-            { id: 2, name: 'Março', color: 'border-l-4 border-pink-400' },
-            { id: 3, name: 'Abril', color: 'border-l-4 border-blue-400' },
-            { id: 4, name: 'Maio', color: 'border-l-4 border-yellow-400' },
-            { id: 5, name: 'Junho', color: 'border-l-4 border-red-500' },
-            { id: 6, name: 'Julho', color: 'border-l-4 border-yellow-500' },
-            { id: 7, name: 'Agosto', color: 'border-l-4 border-orange-500' },
-            { id: 8, name: 'Setembro', color: 'border-l-4 border-green-400' },
-            { id: 9, name: 'Outubro', color: 'border-l-4 border-pink-500' },
-            { id: 10, name: 'Novembro', color: 'border-l-4 border-blue-600' },
-            { id: 11, name: 'Dezembro', color: 'border-l-4 border-red-600' }
-        ];
-
-        const TYPES = ['TI', 'Evento Interno', 'Evento Externo', 'Campanha', 'Treinamento', 'Gravação Externa'];
-        const SECTORS = ['Comunicação', 'Diretoria', 'Administrativo', 'RH', 'Infraestrutura', 'TI', 'Visitante'];
-        const AUDIENCES = ['Interno', 'Externo', 'Parceria', 'Visitante', 'Colaborador'];
-
-        // --- FIREBASE SETUP ---
+        // --- CONFIGURAÇÃO ---
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'evereste-2026-v1';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'evereste-gestao-2026-v1';
 
         window.state = {
             view: 'dashboard',
@@ -151,292 +140,287 @@
             crises: [],
             notifications: [],
             monthlyReports: {},
-            holidays: [],
-            isLoaded: false
+            holidays: []
         };
 
-        let db;
+        const MONTHS_DATA = [
+            { id: 0, name: 'Janeiro', color: 'border-l-8 border-slate-300' },
+            { id: 1, name: 'Fevereiro', color: 'border-l-8 border-purple-500' },
+            { id: 2, name: 'Março', color: 'border-l-8 border-pink-500' },
+            { id: 3, name: 'Abril', color: 'border-l-8 border-sky-500' },
+            { id: 4, name: 'Maio', color: 'border-l-8 border-yellow-500' },
+            { id: 5, name: 'Junho', color: 'border-l-8 border-red-500' },
+            { id: 6, name: 'Julho', color: 'border-l-8 border-amber-500' },
+            { id: 7, name: 'Agosto', color: 'border-l-8 border-orange-500' },
+            { id: 8, name: 'Setembro', color: 'border-l-8 border-emerald-500' },
+            { id: 9, name: 'Outubro', color: 'border-l-8 border-rose-500' },
+            { id: 10, name: 'Novembro', color: 'border-l-8 border-indigo-600' },
+            { id: 11, name: 'Dezembro', color: 'border-l-8 border-red-700' }
+        ];
 
-        // --- RENDER ENGINE ---
+        const TYPES = ['TI', 'Evento Interno', 'Evento Externo', 'Campanha', 'Treinamento', 'Gravação Externa', 'Palestra'];
+        const SECTORS = ['Comunicação', 'Diretoria', 'Administrativo', 'RH', 'Infraestrutura', 'TI', 'Visitante'];
+        const STATUS = ['Planejado', 'Em Execução', 'Concluído', 'Realizado', 'Não Realizado'];
+        const AUDIENCES = ['Interno', 'Externo', 'Parceria', 'Visitante', 'Colaborador'];
 
-        window.renderApp = () => {
-            const content = document.getElementById('app-content');
-            if(!content) return;
+        let db, auth;
 
-            // Atualiza botões
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = btn.dataset.view === window.state.view ? 'nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all nav-btn-active' : 'nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all nav-btn-inactive';
-            });
+        // --- DEFINIÇÕES DE TEMPLATE ---
 
-            // Seletor de Mês
-            let mSelector = '';
-            if (['month', 'reports'].includes(window.state.view)) {
-                mSelector = `
-                    <div class="mb-6 overflow-x-auto pb-2 no-print custom-scrollbar">
-                        <div class="flex gap-2 min-w-max">
-                            ${MONTHS_DATA.map(m => `
-                                <button onclick="window.changeMonth(${m.id})" class="px-4 py-2 rounded-full text-[10px] font-black border transition-all ${window.state.selectedMonth === m.id ? 'bg-blue-900 text-white border-blue-900 shadow-md scale-105' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'} uppercase tracking-tight">
-                                    ${m.name}
-                                </button>`).join('')}
+        window.templates = {
+            dashboard: () => {
+                const acts = window.state.activities;
+                const completed = acts.filter(a => a.status === 'Concluído' || a.status === 'Realizado').length;
+                const rated = acts.filter(a => a.satisfaction && !isNaN(a.satisfaction));
+                const avg = rated.length ? Math.round(rated.reduce((acc, c) => acc + parseFloat(c.satisfaction), 0) / rated.length) : 0;
+                const top = [...acts].filter(a => a.satisfaction).sort((a,b) => b.satisfaction - a.satisfaction).slice(0,5);
+
+                return `
+                    <div class="space-y-8 animate-fadeIn">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Média de Satisfação</p><h3 class="text-4xl font-black text-blue-700">${avg}%</h3></div>
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ações Concluídas</p><h3 class="text-4xl font-black text-emerald-600">${completed}</h3></div>
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total de Ações</p><h3 class="text-4xl font-black text-slate-800">${acts.length}</h3></div>
+                            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Alertas de Risco</p><h3 class="text-4xl font-black text-red-600">${window.state.crises.length}</h3></div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                                <h3 class="text-sm font-black text-slate-800 mb-6 uppercase tracking-widest flex items-center gap-2"><i data-lucide="award" class="text-yellow-500"></i> Melhores Eventos</h3>
+                                <div class="space-y-4">
+                                    ${top.map(t => `<div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <div class="truncate pr-4"><p class="text-xs font-black text-slate-800 truncate">${t.eventName || 'S/ Nome'}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${t.type}</p></div>
+                                        <span class="text-sm font-black text-emerald-600">${t.satisfaction}%</span>
+                                    </div>`).join('') || '<p class="text-center py-10 text-slate-300 italic text-sm">A carregar avaliações...</p>'}
+                                </div>
+                            </div>
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                                <h3 class="text-sm font-black text-slate-800 mb-6 uppercase tracking-widest flex items-center gap-2"><i data-lucide="bell" class="text-blue-600"></i> Mural de Avisos</h3>
+                                <div class="flex gap-2 mb-6 no-print">
+                                    <input type="text" id="notif-input" placeholder="Novo aviso unificado..." class="flex-1 bg-slate-50 border-none p-3 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button onclick="window.sendNotif()" class="bg-blue-900 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest">Postar</button>
+                                </div>
+                                <div class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    ${window.state.notifications.map(n => `<div class="p-4 bg-blue-50 border-l-4 border-blue-600 rounded-xl flex justify-between group">
+                                        <div><p class="text-xs text-blue-900 font-medium leading-relaxed">${n.text}</p><span class="text-[8px] text-blue-400 font-black uppercase mt-2 block">${new Date(n.timestamp).toLocaleString()}</span></div>
+                                        <button onclick="window.delNotif('${n.id}')" class="text-red-300 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"><i data-lucide="trash-2" size="14"></i></button>
+                                    </div>`).join('') || '<p class="text-center py-10 text-slate-300 italic text-sm">Sem avisos registados.</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            },
+            month: () => {
+                const m = MONTHS_DATA[window.state.selectedMonth];
+                const acts = window.state.activities.filter(a => parseInt(a.month) === m.id);
+                const holds = window.state.holidays.filter(h => parseInt(h.month) === m.id);
+
+                return `
+                    <div class="space-y-6 animate-fadeIn">
+                        <div class="bg-white p-8 rounded-3xl shadow-sm border ${m.color}">
+                            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div><h2 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">${m.name} 2026</h2><p class="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Cronograma de Atividades</p></div>
+                                <div class="flex gap-3 no-print">
+                                    <button onclick="window.addAct()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition shadow-xl shadow-blue-200 flex items-center gap-2"><i data-lucide="plus" size="16"></i> ADICIONAR AÇÃO</button>
+                                    <button onclick="window.exportPDF()" class="bg-slate-100 text-slate-600 px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition hover:bg-slate-200 flex items-center gap-2"><i data-lucide="printer" size="16"></i> PDF</button>
+                                </div>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-slate-50 flex flex-wrap gap-3 items-center">
+                                <div class="no-print flex gap-1 mr-4 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+                                    <input id="h-day" type="number" placeholder="Dia" class="w-12 p-2 text-xs rounded-xl border-none bg-transparent font-black outline-none">
+                                    <input id="h-name" type="text" placeholder="Feriado / Data" class="w-48 p-2 text-xs rounded-xl border-none bg-transparent font-medium outline-none">
+                                    <button onclick="window.addHoliday()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest">ADD</button>
+                                </div>
+                                ${holds.map(h => `<span class="bg-white border text-blue-800 px-4 py-2 rounded-2xl text-[10px] font-black shadow-sm flex items-center gap-3"><b>${h.day}</b> ${h.name.toUpperCase()} <i onclick="window.delHold('${h.id}')" data-lucide="x" size="12" class="cursor-pointer hover:text-red-500 no-print"></i></span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
+                            <div class="overflow-x-auto custom-scrollbar">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-slate-50/80 text-slate-400 font-black uppercase text-[9px] tracking-[0.15em] border-b">
+                                        <tr>
+                                            <th class="px-6 py-5 w-[160px]">Tipo</th>
+                                            <th class="px-6 py-5 min-w-[200px]">Nome do Evento</th>
+                                            <th class="px-6 py-5 w-[185px]">Data / Hora</th>
+                                            <th class="px-6 py-5 w-[140px]">Público</th>
+                                            <th class="px-6 py-5 w-[160px]">Setor Resp.</th>
+                                            <th class="px-6 py-5 min-w-[250px]">Ocorrência / Entrega</th>
+                                            <th class="px-6 py-5 w-[100px]">Meta</th>
+                                            <th class="px-6 py-5 w-[110px]">Satisfação</th>
+                                            <th class="px-6 py-5 w-[150px]">Status</th>
+                                            <th class="px-6 py-5 w-12 no-print"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        ${acts.map(a => `
+                                            <tr class="hover:bg-slate-50 transition-colors">
+                                                <td class="px-6 py-4">
+                                                    <select onchange="window.saveAct('${a.id}', 'type', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase bg-white cursor-pointer">
+                                                        ${TYPES.map(o => `<option ${a.type === o ? 'selected' : ''}>${o}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <input type="text" value="${a.eventName || ''}" onblur="window.saveAct('${a.id}', 'eventName', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-xs font-bold text-slate-800" placeholder="Nome do evento...">
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex flex-col gap-1">
+                                                        <input type="date" value="${a.date || ''}" min="2026-01-01" max="2026-12-31" onchange="window.saveAct('${a.id}', 'date', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-xs font-black">
+                                                        <input type="time" value="${a.time || ''}" onchange="window.saveAct('${a.id}', 'time', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-xs font-black">
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <select onchange="window.saveAct('${a.id}', 'audience', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-[10px] font-bold bg-white cursor-pointer">
+                                                        ${AUDIENCES.map(o => `<option ${a.audience === o ? 'selected' : ''}>${o}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <select onchange="window.saveAct('${a.id}', 'eventSector', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-[10px] font-bold bg-white cursor-pointer">
+                                                        ${SECTORS.map(o => `<option ${a.eventSector === o ? 'selected' : ''}>${o}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <textarea onblur="window.saveAct('${a.id}', 'postOccurrence', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-xs h-12 leading-tight resize-none" placeholder="Descrição objetiva...">${a.postOccurrence || ''}</textarea>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <input type="number" value="${a.individualGoal || ''}" onblur="window.saveAct('${a.id}', 'individualGoal', this.value)" class="w-14 p-2 border border-slate-100 rounded-xl text-center font-bold text-slate-500" placeholder="0">
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="number" value="${a.satisfaction || ''}" onblur="window.saveAct('${a.id}', 'satisfaction', this.value)" class="w-14 p-2 border border-slate-100 rounded-xl text-center font-black text-blue-700" min="0" max="100">
+                                                        <span class="text-[9px] font-black text-slate-300">%</span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <select onchange="window.saveAct('${a.id}', 'status', this.value)" class="w-full p-2 rounded-xl font-black text-[10px] uppercase border-none cursor-pointer ${a.status === 'Concluído' || a.status === 'Realizado' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">
+                                                        ${STATUS.map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-6 py-4 text-right no-print">
+                                                    <button onclick="window.delActReq('${a.id}')" class="text-slate-300 hover:text-red-500 transition-all p-2 rounded-lg hover:bg-red-50"><i data-lucide="trash-2" size="18"></i></button>
+                                                </td>
+                                            </tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            ${acts.length === 0 ? '<div class="p-20 text-center text-slate-300 font-black uppercase text-xs tracking-widest">Sem ações planeadas</div>' : ''}
+                        </div>
+                    </div>`;
+            },
+            calendar: () => {
+                return `
+                    <div class="space-y-6 animate-fadeIn">
+                        <div class="flex justify-between items-center bg-white p-6 rounded-3xl border shadow-sm">
+                            <div><h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Vista Consolidada 2026</h2><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cronograma Anual de Eventos</p></div>
+                            <button onclick="window.exportPDF()" class="no-print bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase">Gerar PDF Anual</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            ${MONTHS_DATA.map(m => {
+                                const mActs = window.state.activities.filter(a => parseInt(a.month) === m.id);
+                                return `
+                                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col min-h-[220px] print-break-inside-avoid">
+                                        <div class="px-5 py-4 ${m.color} bg-slate-50/80 border-b flex justify-between items-center">
+                                            <h3 class="font-black text-xs uppercase tracking-tighter text-slate-700">${m.name}</h3>
+                                            <span class="text-[9px] font-black bg-white border px-2 py-0.5 rounded-full text-slate-500">${mActs.length} AÇÕES</span>
+                                        </div>
+                                        <div class="p-4 flex-1 overflow-y-auto custom-scrollbar max-h-56">
+                                            <ul class="space-y-2.5">
+                                                ${mActs.map(a => `<li class="text-[10px] flex items-start gap-2 leading-tight">
+                                                    <span class="w-2 h-2 rounded-full mt-1 flex-shrink-0 ${a.status === 'Concluído' ? 'bg-emerald-500' : 'bg-blue-500'}"></span>
+                                                    <div class="flex-1"><span class="font-black text-slate-800">${a.date ? a.date.split('-')[2] : '??'}</span> <span class="text-slate-500 font-medium truncate">${a.eventName || 'S/ Nome'}</span></div>
+                                                </li>`).join('') || '<li class="text-[9px] text-slate-300 italic text-center py-10 uppercase font-black">Vazio</li>'}
+                                            </ul>
+                                        </div>
+                                    </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            },
+            crisis: () => {
+                return `
+                    <div class="space-y-8 animate-fadeIn">
+                        <div class="bg-red-800 text-white p-8 rounded-[2rem] shadow-xl flex flex-col md:flex-row justify-between items-center gap-6 no-print">
+                            <div><h2 class="text-2xl font-black uppercase tracking-tighter">Riscos & Crises</h2><p class="text-red-200 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Monitoramento Preventivo Evereste</p></div>
+                            <button onclick="window.addCrisis()" class="bg-white text-red-800 px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition">REGISTAR NOVO ALERTA</button>
+                        </div>
+                        <div class="grid gap-6">
+                            ${window.state.crises.map(c => `
+                                <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 relative print-break-inside-avoid">
+                                    <button onclick="window.delCrisisReq('${c.id}')" class="absolute top-8 right-8 text-slate-200 hover:text-red-600 transition no-print"><i data-lucide="trash-2" size="20"></i></button>
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 border-b border-slate-50 pb-8">
+                                        <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Data</label><input type="date" value="${c.date}" onchange="window.saveCrisis('${c.id}', 'date', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-3 text-xs font-black"></div>
+                                        <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Gravidade</label><select onchange="window.saveCrisis('${c.id}', 'riskLevel', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-3 text-[10px] font-black text-red-700 uppercase">
+                                            ${['Sem relevância crítica', 'Leve', 'Moderada', 'Potencial', 'Grave', 'Reputacional Extrema'].map(r => `<option ${c.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                        </select></div>
+                                        <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Setor Responsável</label><select onchange="window.saveCrisis('${c.id}', 'sector', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-3 text-xs font-black uppercase">
+                                            ${SECTORS.map(s => `<option ${c.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                        </select></div>
+                                        <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Registado por</label><input type="text" value="Vera Nascimento" readonly class="w-full border-none bg-slate-100/50 rounded-xl p-3 text-xs font-bold text-slate-400 cursor-not-allowed"></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="p-6 bg-red-50/50 rounded-3xl border border-red-100/50"><label class="block text-[10px] font-black text-red-800 uppercase tracking-widest mb-4">Plano de Acção e Ocorrência</label><textarea onblur="window.saveCrisis('${c.id}', 'correctiveAction', this.value)" class="w-full bg-white border-none rounded-2xl p-4 text-sm h-32 shadow-inner resize-none font-medium text-slate-700 leading-relaxed" placeholder="Detalhes do ocorrido e ações imediatas...">${c.correctiveAction || ''}</textarea></div>
+                                        <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100"><label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Notas de Melhoria</label><textarea onblur="window.saveCrisis('${c.id}', 'learning', this.value)" class="w-full bg-transparent border-none text-sm h-32 font-medium text-slate-600 resize-none leading-relaxed" placeholder="O que aprendemos com esta situação?">${c.learning || ''}</textarea></div>
+                                    </div>
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
+            },
+            reports: () => {
+                const m = MONTHS_DATA[window.state.selectedMonth];
+                const acts = window.state.activities.filter(a => parseInt(a.month) === m.id);
+                const done = acts.filter(a => a.status === 'Concluído' || a.status === 'Realizado').length;
+                const rep = window.state.monthlyReports[m.id] || { explanation: '', highlights: '' };
+
+                return `
+                    <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
+                        <div class="flex flex-col md:flex-row justify-between items-center bg-white p-8 rounded-[2rem] border shadow-sm gap-6">
+                            <div><h2 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">Relatório Mensal</h2><p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mt-1">${m.name} 2026</p></div>
+                            <div class="flex gap-3 no-print">
+                                <button onclick="window.autoGenRep()" class="bg-blue-50 text-blue-700 px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition">GERAR AUTOMÁTICO</button>
+                                <button onclick="window.exportPDF()" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-200 flex items-center gap-2"><i data-lucide="file-text" size="16"></i> EXPORTAR GESTÃO</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div class="p-8 bg-slate-900 rounded-[2rem] text-center shadow-xl"><span class="text-4xl font-black text-white block">${acts.length}</span><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-3 block">Meta Mensal</span></div>
+                            <div class="p-8 bg-emerald-600 rounded-[2rem] text-center shadow-xl"><span class="text-4xl font-black text-white block">${done}</span><span class="text-[9px] font-black text-emerald-200 uppercase tracking-widest mt-3 block">Concluídas</span></div>
+                            <div class="p-8 bg-amber-500 rounded-[2rem] text-center shadow-xl"><span class="text-4xl font-black text-white block">${acts.length - done}</span><span class="text-[9px] font-black text-amber-100 uppercase tracking-widest mt-3 block">Pendentes</span></div>
+                            <div class="p-8 bg-blue-600 rounded-[2rem] text-center shadow-xl"><span class="text-4xl font-black text-white block">${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%</span><span class="text-[9px] font-black text-blue-200 uppercase tracking-widest mt-3 block">Eficiência</span></div>
+                        </div>
+                        <div class="space-y-8">
+                            <div class="bg-white p-10 rounded-[2.5rem] border shadow-sm">
+                                <h3 class="font-black text-slate-800 text-xs uppercase tracking-[0.2em] mb-8 border-b pb-4">1. Relatório Geral de Entregas</h3>
+                                <textarea onblur="window.saveRep('${m.id}', 'explanation', this.value)" class="w-full bg-slate-50 border-none rounded-3xl p-8 h-72 text-sm leading-relaxed text-slate-700 shadow-inner font-medium focus:ring-2 focus:ring-blue-100 transition">${rep.explanation || ''}</textarea>
+                            </div>
+                            <div class="bg-white p-10 rounded-[2.5rem] border shadow-sm">
+                                <h3 class="font-black text-slate-800 text-xs uppercase tracking-[0.2em] mb-8 border-b pb-4">2. Pontos Positivos e Lições</h3>
+                                <textarea onblur="window.saveRep('${m.id}', 'highlights', this.value)" class="w-full bg-slate-50 border-none rounded-3xl p-8 h-48 text-sm leading-relaxed text-slate-700 shadow-inner font-medium focus:ring-2 focus:ring-emerald-100 transition">${rep.highlights || ''}</textarea>
+                            </div>
                         </div>
                     </div>`;
             }
-
-            let viewHTML = '';
-            if(window.state.view === 'dashboard') viewHTML = getDashboardHTML();
-            else if(window.state.view === 'month') viewHTML = getMonthHTML();
-            else if(window.state.view === 'calendar') viewHTML = getCalendarHTML();
-            else if(window.state.view === 'crisis') viewHTML = getCrisisHTML();
-            else if(window.state.view === 'reports') viewHTML = getReportsHTML();
-
-            content.innerHTML = mSelector + viewHTML;
-            lucide.createIcons();
-            window.state.isLoaded = true;
         };
 
-        // --- TEMPLATES ---
-
-        const getDashboardHTML = () => {
-            const acts = window.state.activities;
-            const done = acts.filter(a => a.status === 'Concluído').length;
-            const rated = acts.filter(a => a.satisfaction && !isNaN(a.satisfaction));
-            const avg = rated.length ? Math.round(rated.reduce((acc, c) => acc + parseFloat(c.satisfaction), 0) / rated.length) : 0;
-            const top = [...acts].filter(a => a.satisfaction).sort((a,b) => b.satisfaction - a.satisfaction).slice(0,5);
-
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="flex justify-between items-center bg-white p-5 rounded-2xl border shadow-sm">
-                        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Painel de Controlo 2026</h2>
-                        <button onclick="window.exportPDF()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-blue-700 transition no-print flex items-center gap-2">
-                            <i data-lucide="printer" size="14"></i> EXPORTAR PDF
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-blue-600"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Satisfação</p><h3 class="text-4xl font-black text-blue-600 leading-none">${avg}%</h3></div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-green-500"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Concluídas</p><h3 class="text-4xl font-black text-green-600 leading-none">${done}</h3></div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-slate-800"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Planeado</p><h3 class="text-4xl font-black text-slate-800 leading-none">${acts.length}</h3></div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Riscos</p><h3 class="text-4xl font-black text-red-600 leading-none">${window.state.crises.length}</h3></div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                            <h3 class="font-black text-slate-700 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest"><i data-lucide="award" class="text-yellow-500"></i> Top 5 Eventos</h3>
-                            <div class="space-y-2">
-                                ${top.map(t => `<div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white transition group">
-                                    <div class="truncate"><p class="text-xs font-black text-slate-800 truncate">${t.eventName || 'S/ Nome'}</p></div>
-                                    <span class="text-xs font-black text-green-600">${t.satisfaction}%</span>
-                                </div>`).join('') || '<p class="text-xs text-slate-400 italic py-10 text-center uppercase font-bold">Sem dados suficientes.</p>'}
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                            <h3 class="font-black text-slate-700 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest"><i data-lucide="message-circle" class="text-blue-500"></i> Mural Público</h3>
-                            <div class="flex gap-2 mb-4 no-print">
-                                <input type="text" id="notif-input" placeholder="Novo aviso unificado..." class="flex-1 border-none bg-slate-100 p-2.5 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 transition">
-                                <button onclick="window.sendNotif()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">POSTAR</button>
-                            </div>
-                            <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                                ${window.state.notifications.map(n => `<div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100/50 flex justify-between group">
-                                    <div class="pr-2"><p class="text-xs text-blue-900 leading-tight">${n.text}</p><p class="text-[8px] text-blue-400 mt-2 font-black uppercase">${new Date(n.timestamp).toLocaleString()}</p></div>
-                                    <button onclick="window.delNotif('${n.id}')" class="text-red-300 opacity-0 group-hover:opacity-100 hover:text-red-600 transition no-print"><i data-lucide="trash-2" size="14"></i></button>
-                                </div>`).join('') || '<p class="text-xs text-slate-300 text-center py-10">Mural vazio.</p>'}
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        };
-
-        const getMonthHTML = () => {
-            const m = MONTHS_DATA[window.state.selectedMonth];
-            const acts = window.state.activities.filter(a => parseInt(a.month) === m.id);
-            const holds = window.state.holidays.filter(h => parseInt(h.month) === m.id);
-
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border ${m.color}">
-                        <div class="flex justify-between items-center">
-                            <div><h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter">${m.name} 2026</h2><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cronograma Institucional</p></div>
-                            <button onclick="window.addAct()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-xs transition shadow-xl shadow-blue-100 no-print flex items-center gap-2">
-                                <i data-lucide="plus" size="16"></i> ADICIONAR AÇÃO
-                            </button>
-                        </div>
-                        <div class="mt-6 pt-5 border-t flex flex-wrap gap-2 items-center">
-                            <div class="no-print flex gap-1 mr-4 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                <input id="h-day" type="number" placeholder="Dia" class="w-12 p-1.5 text-xs rounded-lg border-none bg-transparent outline-none">
-                                <input id="h-name" type="text" placeholder="Feriado" class="w-32 p-1.5 text-xs rounded-lg border-none bg-transparent outline-none">
-                                <button onclick="window.addHoliday()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-black">ADD</button>
-                            </div>
-                            ${holds.map(h => `<span class="bg-white border text-blue-700 px-3 py-1.5 rounded-xl text-[10px] font-black shadow-sm flex items-center gap-2"><b>${h.day}</b> ${h.name.toUpperCase()} <i onclick="window.delHold('${h.id}')" data-lucide="x" size="10" class="cursor-pointer hover:text-red-500 no-print"></i></span>`).join('')}
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
-                                    <tr>
-                                        <th class="px-5 py-4 w-[160px]">Classificação</th>
-                                        <th class="px-5 py-4 min-w-[200px]">Nome do Evento</th>
-                                        <th class="px-5 py-4 w-[180px]">Data / Hora</th>
-                                        <th class="px-5 py-4 w-[140px]">Setor Resp.</th>
-                                        <th class="px-5 py-4 min-w-[220px]">Descrição Ocorrência</th>
-                                        <th class="px-5 py-4 w-[100px]">Satisfação</th>
-                                        <th class="px-5 py-4 w-[140px]">Status</th>
-                                        <th class="px-5 py-4 w-12 no-print"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-50">
-                                    ${acts.map(a => `
-                                        <tr class="hover:bg-slate-50 transition-colors">
-                                            <td class="px-5 py-3">
-                                                <select onchange="window.saveAct('${a.id}', 'type', this.value)" class="w-full p-2 border border-slate-200 rounded-xl text-[10px] font-black uppercase bg-white">
-                                                    ${TYPES.map(o => `<option ${a.type === o ? 'selected' : ''}>${o}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-5 py-3">
-                                                <input type="text" value="${a.eventName || ''}" onblur="window.saveAct('${a.id}', 'eventName', this.value)" class="w-full p-2 border border-slate-200 rounded-xl text-xs font-bold" placeholder="Nome...">
-                                            </td>
-                                            <td class="px-5 py-3">
-                                                <div class="flex flex-col gap-1">
-                                                    <input type="date" value="${a.date || ''}" onchange="window.saveAct('${a.id}', 'date', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-[10px] font-bold">
-                                                    <input type="time" value="${a.time || ''}" onchange="window.saveAct('${a.id}', 'time', this.value)" class="p-1.5 border border-slate-100 rounded-lg text-[10px] font-bold">
-                                                </div>
-                                            </td>
-                                            <td class="px-5 py-3">
-                                                <select onchange="window.saveAct('${a.id}', 'eventSector', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-[10px] font-bold bg-white">
-                                                    ${SECTORS.map(o => `<option ${a.eventSector === o ? 'selected' : ''}>${o}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-5 py-3">
-                                                <textarea onblur="window.saveAct('${a.id}', 'postOccurrence', this.value)" class="w-full p-2 border border-slate-100 rounded-xl text-[10px] h-12 leading-tight" placeholder="Anotações...">${a.postOccurrence || ''}</textarea>
-                                            </td>
-                                            <td class="px-5 py-3">
-                                                <div class="flex items-center gap-1">
-                                                    <input type="number" value="${a.satisfaction || ''}" onblur="window.saveAct('${a.id}', 'satisfaction', this.value)" class="w-12 p-2 border border-slate-200 rounded-xl text-center font-black text-blue-600" min="0" max="100">
-                                                    <span class="text-[9px] font-black text-slate-300">%</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-5 py-3">
-                                                <select onchange="window.saveAct('${a.id}', 'status', this.value)" class="w-full p-2 rounded-xl font-black text-[10px] uppercase border-none ${a.status === 'Concluído' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
-                                                    ${STATUS_OPTIONS.map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-5 py-3 text-right no-print">
-                                                <button onclick="window.delActRequest('${a.id}')" class="text-slate-300 hover:text-red-500 transition"><i data-lucide="trash-2" size="16"></i></button>
-                                            </td>
-                                        </tr>`).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ${acts.length === 0 ? '<div class="p-20 text-center text-slate-300 font-black uppercase text-xs tracking-widest bg-slate-50/50">Nenhuma ação neste mês</div>' : ''}
-                    </div>
-                </div>`;
-        };
-
-        const getCalendarHTML = () => {
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex justify-between items-center">
-                        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Calendário Consolidado 2026</h2>
-                        <button onclick="window.exportPDF()" class="no-print bg-slate-800 text-white px-5 py-2 rounded-xl text-xs font-bold">IMPRIMIR ANUAL</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        ${MONTHS_DATA.map(m => {
-                            const mActs = window.state.activities.filter(a => parseInt(a.month) === m.id);
-                            return `
-                                <div class="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col min-h-[180px] print-break-inside-avoid">
-                                    <div class="px-4 py-3 ${m.color} bg-slate-50/50 border-b flex justify-between items-center">
-                                        <h3 class="font-black text-[11px] uppercase tracking-tighter text-slate-700">${m.name}</h3>
-                                        <span class="text-[9px] font-black bg-white border px-2 py-0.5 rounded-full text-slate-500">${mActs.length} AÇÕES</span>
-                                    </div>
-                                    <div class="p-3 flex-1 overflow-y-auto custom-scrollbar max-h-48">
-                                        <ul class="space-y-2">
-                                            ${mActs.map(a => `<li class="text-[10px] flex items-start gap-2 leading-tight">
-                                                <span class="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${a.status === 'Concluído' ? 'bg-green-500' : 'bg-blue-400'}"></span>
-                                                <div class="flex-1"><span class="font-bold text-slate-800">${a.date ? a.date.split('-')[2] : ''}</span> <span class="text-slate-500 truncate">${a.eventName || 'S/ Nome'}</span></div>
-                                            </li>`).join('') || '<li class="text-[9px] text-slate-300 italic text-center py-6">Vazio</li>'}
-                                        </ul>
-                                    </div>
-                                </div>`;
-                        }).join('')}
-                    </div>
-                </div>`;
-        };
-
-        const getCrisisHTML = () => {
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="bg-red-800 text-white p-7 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 no-print">
-                        <div><h2 class="text-2xl font-black uppercase tracking-tighter">Riscos & Crises</h2><p class="text-red-200 text-xs font-bold uppercase tracking-widest mt-1">Gestão Preventiva Unificada</p></div>
-                        <button onclick="window.addCrisis()" class="bg-white text-red-800 px-6 py-3 rounded-2xl font-black uppercase text-xs shadow-xl">Registar Novo Risco</button>
-                    </div>
-                    <div class="grid gap-4">
-                        ${window.state.crises.map(c => `
-                            <div class="bg-white rounded-2xl border shadow-sm p-6 relative print-break-inside-avoid">
-                                <button onclick="window.delCrisisReq('${c.id}')" class="absolute top-6 right-6 text-slate-200 hover:text-red-500 no-print transition"><i data-lucide="trash-2" size="20"></i></button>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 border-b pb-6">
-                                    <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Data</label><input type="date" value="${c.date}" onchange="window.saveCrisis('${c.id}', 'date', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-2.5 text-xs font-bold"></div>
-                                    <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Risco</label><select onchange="window.saveCrisis('${c.id}', 'riskLevel', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-2.5 text-[10px] font-black text-red-700">
-                                        ${['Leve', 'Moderada', 'Grave', 'Extrema'].map(r => `<option ${c.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
-                                    </select></div>
-                                    <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Setor</label><select onchange="window.saveCrisis('${c.id}', 'sector', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-2.5 text-xs font-bold">
-                                        ${SECTORS.map(s => `<option ${c.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
-                                    </select></div>
-                                    <div><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Responsável</label><select onchange="window.saveCrisis('${c.id}', 'responsible', this.value)" class="w-full border-none bg-slate-50 rounded-xl p-2.5 text-xs font-bold">
-                                        <option>Vera Nascimento</option><option>Gisely Rocha</option>
-                                    </select></div>
-                                </div>
-                                <div class="p-4 bg-slate-50 rounded-2xl"><label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Medidas de Contenção e Plano de Ação</label><textarea onblur="window.saveCrisis('${c.id}', 'correctiveAction', this.value)" class="w-full border-none bg-white rounded-xl p-4 text-xs h-24 shadow-inner resize-none focus:ring-1 focus:ring-blue-100" placeholder="Descreva as ações..."> ${c.correctiveAction || ''}</textarea></div>
-                            </div>`).join('')}
-                    </div>
-                </div>`;
-        };
-
-        const getReportsHTML = () => {
-            const m = MONTHS_DATA[window.state.selectedMonth];
-            const rep = window.state.monthlyReports[m.id] || { explanation: '', highlights: '' };
-            return `
-                <div class="space-y-6 animate-fadeIn max-w-5xl mx-auto">
-                    <div class="flex justify-between items-center bg-white p-6 rounded-2xl border shadow-sm">
-                        <div><h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter">Relatório Mensal</h2><p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">${m.name} 2026</p></div>
-                        <button onclick="window.exportPDF()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-xs shadow-lg">GERAR PDF</button>
-                    </div>
-                    <div class="bg-white p-8 rounded-2xl border shadow-sm space-y-8">
-                        <div>
-                            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                                <h3 class="font-black text-xs uppercase tracking-widest text-slate-500">1. Análise Estratégica</h3>
-                                <button onclick="window.autoGenRep()" class="no-print text-[9px] font-black text-blue-600 hover:underline">GERAR AUTO</button>
-                            </div>
-                            <textarea onblur="window.saveRep('${m.id}', 'explanation', this.value)" class="w-full bg-slate-50 border-none rounded-2xl p-6 h-60 text-sm leading-relaxed text-slate-700 shadow-inner">${rep.explanation || ''}</textarea>
-                        </div>
-                        <div>
-                            <h3 class="font-black text-xs uppercase tracking-widest text-slate-500 mb-4 border-b pb-2">2. Pontos Fortes</h3>
-                            <textarea onblur="window.saveRep('${m.id}', 'highlights', this.value)" class="w-full bg-slate-50 border-none rounded-2xl p-6 h-32 text-sm leading-relaxed text-slate-700 shadow-inner">${rep.highlights || ''}</textarea>
-                        </div>
-                    </div>
-                </div>`;
-        };
-
-        // --- GLOBAL ACTIONS ---
+        // --- LÓGICA DE INTERAÇÃO GLOBAL ---
 
         window.changeView = (v) => { window.state.view = v; window.renderApp(); };
         window.changeMonth = (m) => { window.state.selectedMonth = m; window.renderApp(); };
         window.toggleMobileMenu = () => document.getElementById('mobile-menu')?.classList.toggle('hidden');
-        window.exportPDF = () => { setTimeout(() => window.print(), 100); };
         window.closeModal = () => document.getElementById('modal-overlay')?.classList.add('hidden');
+        
         window.openConfirm = (msg, cb) => {
             const m = document.getElementById('modal-overlay'), t = document.getElementById('modal-message'), b = document.getElementById('modal-confirm-btn');
             t.innerText = msg; b.onclick = () => { cb(); window.closeModal(); }; m.classList.remove('hidden');
         };
 
-        // DB OPS
+        // Database Ops
         window.addAct = async () => {
-            const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '2026-01-01', time: '09:00', eventSector: 'Comunicação', postOccurrence: '', satisfaction: '', status: 'Planejado', createdAt: new Date().toISOString() };
+            const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '2026-01-01', time: '09:00', eventSector: 'Comunicação', postOccurrence: '', individualGoal: 0, satisfaction: 0, status: 'Planejado', createdAt: new Date().toISOString() };
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), d);
         };
         window.saveAct = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [f]: v });
-        window.delActRequest = (id) => window.openConfirm("Eliminar esta ação para todos?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id)));
+        window.delActReq = (id) => window.openConfirm("Deseja eliminar esta ação para todos?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id)));
 
         window.addCrisis = async () => {
-            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Leve', sector: 'Comunicação', responsible: 'Vera Nascimento', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
+            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Moderada', sector: 'Comunicação', responsible: 'Vera Nascimento', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), d);
         };
         window.saveCrisis = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [f]: v });
@@ -455,35 +439,45 @@
         window.delHold = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
 
         window.saveRep = async (m, f, v) => await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', m.toString()), { [f]: v }, { merge: true });
-        window.clearRep = () => window.openConfirm("Limpar relatório?", () => setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', window.state.selectedMonth.toString()), { explanation: '', highlights: '' }));
         window.autoGenRep = () => {
             const acts = window.state.activities.filter(a => parseInt(a.month) === window.state.selectedMonth);
-            const done = acts.filter(a => a.status === 'Concluído').length;
-            const txt = `Durante o mês de ${MONTHS_DATA[window.state.selectedMonth].name}, o Setor de Comunicação coordenou ${acts.length} ações. A taxa de conclusão foi de ${done} eventos, representando uma eficiência de ${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%. O planeamento de 2026 segue conforme os objetivos institucionais.`;
+            const done = acts.filter(a => a.status === 'Concluído' || a.status === 'Realizado').length;
+            const txt = `Durante o período de ${MONTHS_DATA[window.state.selectedMonth].name} de 2026, o Setor de Comunicação do Instituto Evereste executou ${acts.length} ações coordenadas. Obtivemos a conclusão bem-sucedida de ${done} metas, com uma taxa de eficiência de ${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%. O fluxo institucional mantém-se estável e alinhado com o plano de gestão anual.`;
             window.saveRep(window.state.selectedMonth, 'explanation', txt);
             window.renderApp();
         };
 
+        window.exportPDF = () => setTimeout(() => window.print(), 100);
         window.handleSave = () => {
-            const b = event.target.closest('button'), t = b.innerHTML;
-            b.innerHTML = '<i data-lucide="cloud-check"></i> Sincronizado!';
-            b.classList.add('bg-green-700');
-            setTimeout(() => { b.innerHTML = t; b.classList.remove('bg-green-700'); lucide.createIcons(); }, 2000);
+            const btn = event.target.closest('button'), orig = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="cloud-check"></i> Sync OK';
+            btn.classList.add('bg-green-700');
+            setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-green-700'); lucide.createIcons(); }, 1500);
         };
 
-        // --- BOOTSTRAP ---
+        // --- MOTOR DE RENDERIZAÇÃO ---
+        window.renderApp = () => {
+            const content = document.getElementById('app-content');
+            if(!content) return;
 
-        async function bootstrap() {
+            // Nav Sync
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = `nav-btn px-5 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${btn.dataset.view === window.state.view ? 'nav-btn-active' : 'nav-btn-inactive'}`;
+            });
+
+            const template = window.templates[window.state.view];
+            if(template) content.innerHTML = template();
+            lucide.createIcons();
+            document.getElementById('initial-loader')?.classList.add('hidden');
+        };
+
+        // --- INICIALIZAÇÃO ---
+        async function setup() {
             const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
+            auth = getAuth(app); // CORRECÇÃO: Declarado e inicializado correctamente
             db = getFirestore(app);
 
-            // Print Date
-            const p = document.getElementById('print-date');
-            if(p) p.innerText = new Date().toLocaleDateString();
-
-            // Fallback: se em 2 segundos não houver dados, renderiza a interface base
-            setTimeout(() => { if(!window.state.isLoaded) window.renderApp(); }, 2000);
+            document.getElementById('print-date').innerText = new Date().toLocaleDateString();
 
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -491,14 +485,14 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) { console.error("Auth Fail", e); }
+            } catch (e) { console.warn("Firebase Auth Fallback", e); }
 
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    document.getElementById('conn-dot')?.classList.replace('bg-yellow-400', 'bg-green-500');
-                    document.getElementById('conn-text').innerText = 'Painel Ativo';
+            onAuthStateChanged(auth, (u) => {
+                if (u) {
+                    document.getElementById('conn-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                    document.getElementById('conn-text').innerText = "CONECTADO";
                     
-                    // Listeners Unificados
+                    // Listeners Real-time
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), s => { window.state.activities = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), s => { window.state.crises = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), s => { window.state.notifications = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); window.renderApp(); });
@@ -508,8 +502,9 @@
             });
         }
 
-        bootstrap();
+        setup();
     </script>
 </body>
 </html>
+
 
