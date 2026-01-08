@@ -20,99 +20,119 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
             color: #0f172a;
+            overflow-x: hidden;
         }
 
         .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out;
+            animation: fadeIn 0.2s ease-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         /* Impressão Otimizada */
         @media print {
             @page { margin: 0.5cm; size: portrait; }
-            body { 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                background-color: white;
-                font-size: 10px; 
-            }
-            #app-content { width: 100% !important; padding: 0 !important; margin: 0 !important; display: block !important; }
-            #mobile-menu, header, footer, .no-print { display: none !important; }
-            table { font-size: 9px; width: 100%; table-layout: fixed; }
-            th, td { padding: 4px 2px !important; word-wrap: break-word; border: 1px solid #e2e8f0 !important; }
-            input, select, textarea { border: none !important; background: transparent !important; padding: 0 !important; resize: none; -webkit-appearance: none; }
-            .bg-blue-100 { background-color: #dbeafe !important; }
-            .bg-blue-900 { background-color: #1e3a8a !important; color: white !important; }
-            .bg-green-100 { background-color: #dcfce7 !important; }
-            .bg-red-100 { background-color: #fee2e2 !important; }
+            body { background-color: white; font-size: 10px; }
+            #app-content { width: 100% !important; display: block !important; }
+            header, .no-print, .nav-container { display: none !important; }
+            table { font-size: 8px; width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #e2e8f0 !important; padding: 4px !important; }
+            .print-break-inside-avoid { break-inside: avoid; }
         }
 
-        #modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+        #modal-overlay { background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); }
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
 
-        .nav-btn-active { background-color: #ffffff !important; color: #1e3a8a !important; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .nav-btn-active { 
+            background-color: #ffffff !important; 
+            color: #1e3a8a !important; 
+            font-weight: 700; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
         .nav-btn-inactive { color: #dbeafe !important; }
-        .nav-btn-inactive:hover { background-color: #1d4ed8 !important; color: #ffffff !important; }
+        .nav-btn-inactive:hover { background-color: #1d4ed8 !important; }
+
+        input:focus, select:focus, textarea:focus {
+            ring: 2px;
+            ring-color: #3b82f6;
+            outline: none;
+            border-color: #3b82f6;
+        }
     </style>
 </head>
 <body class="pb-12 h-screen flex flex-col">
 
-    <!-- Modal de Confirmação -->
-    <div id="modal-overlay" class="fixed inset-0 flex items-center justify-center z-50 hidden no-print bg-black/50 backdrop-blur-sm">
-        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full border border-red-100 animate-fadeIn">
+    <!-- Overlay de Confirmação -->
+    <div id="modal-overlay" class="fixed inset-0 flex items-center justify-center z-[100] hidden no-print">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full border border-red-100 animate-fadeIn">
             <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                 <i data-lucide="alert-triangle" class="text-red-500"></i> Confirmação
             </h3>
-            <p id="modal-message" class="text-gray-600 mb-6">Tem a certeza?</p>
+            <p id="modal-message" class="text-gray-600 mb-6 text-sm">Deseja realmente prosseguir com esta ação?</p>
             <div class="flex justify-end gap-3">
-                <button onclick="window.closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
-                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm">Sim, Apagar</button>
+                <button onclick="window.closeModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium">Cancelar</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm text-sm font-bold">Confirmar</button>
             </div>
         </div>
     </div>
 
+    <!-- Estrutura Principal -->
     <div id="app-wrapper" class="flex-1 flex flex-col">
-        <!-- Header -->
-        <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-40 no-print">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <!-- Header Fixo -->
+        <header class="bg-blue-900 text-white shadow-md sticky top-0 z-40 no-print">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-white rounded flex items-center justify-center text-blue-900 font-bold shadow-sm">AE</div>
+                    <div class="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-blue-900 font-black shadow-sm">AE</div>
                     <div>
-                        <h1 class="text-lg font-bold leading-none">Evereste</h1>
-                        <p class="text-xs text-blue-200 mt-1">Gestão Integrada 2026</p>
+                        <h1 class="text-lg font-bold leading-none tracking-tight">Instituto Evereste</h1>
+                        <p class="text-[10px] text-blue-300 uppercase font-bold tracking-widest mt-0.5">Gestão de Comunicação 2026</p>
                     </div>
                 </div>
 
-                <nav class="hidden md:flex gap-1 bg-blue-800/50 p-1 rounded-lg">
-                    <button onclick="window.changeView('dashboard')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="dashboard">Dashboard</button>
-                    <button onclick="window.changeView('month')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="month">Ações</button>
-                    <button onclick="window.changeView('calendar')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="calendar">Calendário</button>
-                    <button onclick="window.changeView('reports')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="reports">Relatórios</button>
-                    <button onclick="window.changeView('crisis')" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-view="crisis">Riscos</button>
+                <nav class="hidden md:flex gap-1 bg-blue-800/40 p-1 rounded-xl">
+                    <button onclick="window.changeView('dashboard')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="dashboard">Dashboard</button>
+                    <button onclick="window.changeView('month')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="month">Ações</button>
+                    <button onclick="window.changeView('calendar')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="calendar">Calendário</button>
+                    <button onclick="window.changeView('reports')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="reports">Relatórios</button>
+                    <button onclick="window.changeView('crisis')" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" data-view="crisis">Riscos</button>
                 </nav>
 
-                <div class="flex items-center gap-2">
-                    <span id="connection-status-dot" class="w-2 h-2 rounded-full bg-gray-400"></span>
-                    <span id="user-display" class="text-xs text-blue-200 hidden md:block">A carregar...</span>
-                    <button class="md:hidden p-2 text-white" onclick="window.toggleMobileMenu()"><i data-lucide="menu"></i></button>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col items-end hidden sm:flex">
+                        <span class="text-[10px] font-bold text-blue-200 uppercase">Status</span>
+                        <div class="flex items-center gap-1.5">
+                            <span id="conn-dot" class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                            <span id="conn-text" class="text-[10px] font-bold">A conectar...</span>
+                        </div>
+                    </div>
+                    <button class="md:hidden p-2 text-white bg-blue-800 rounded-lg" onclick="window.toggleMobileMenu()"><i data-lucide="menu"></i></button>
                 </div>
+            </div>
+
+            <!-- Menu Mobile -->
+            <div id="mobile-menu" class="hidden md:hidden bg-blue-800 border-t border-blue-700 px-4 py-3 space-y-1 shadow-inner">
+                <button onclick="window.changeView('dashboard'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50">Dashboard</button>
+                <button onclick="window.changeView('month'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50">Ações do Mês</button>
+                <button onclick="window.changeView('calendar'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50">Calendário Anual</button>
+                <button onclick="window.changeView('reports'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm border-b border-blue-700/50">Relatórios</button>
+                <button onclick="window.changeView('crisis'); window.toggleMobileMenu()" class="block w-full text-left py-3 px-4 text-white font-bold text-sm">Riscos & Crises</button>
             </div>
         </header>
 
-        <main id="app-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
-            <div id="loading-spinner" class="text-center py-20 text-gray-500">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 mb-4"></div>
-                <p>Sincronizando com o painel unificado...</p>
+        <!-- Conteúdo Dinâmico -->
+        <main id="app-content" class="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
+            <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-900 mb-4"></div>
+                <p class="font-medium">A sincronizar painel unificado...</p>
             </div>
         </main>
 
-        <footer class="hidden print:block text-center text-[8px] text-gray-400 mt-8 border-t pt-2">
-            Assessoria de Comunicação Evereste - Documento Gerado em <span id="print-date"></span>
+        <footer class="hidden print:block text-center text-[9px] text-gray-400 mt-10 border-t pt-4">
+            Instituto Evereste - Setor de Comunicação - Relatório Oficial 2026
         </footer>
     </div>
 
@@ -133,372 +153,378 @@
             notifications: [],
             monthlyReports: {},
             holidays: [],
-            user: null
+            isReady: false
         };
+
+        const MONTHS = [
+            { id: 0, name: 'Janeiro', color: 'border-l-4 border-gray-300' },
+            { id: 1, name: 'Fevereiro', color: 'border-l-4 border-purple-400' },
+            { id: 2, name: 'Março', color: 'border-l-4 border-pink-400' },
+            { id: 3, name: 'Abril', color: 'border-l-4 border-blue-400' },
+            { id: 4, name: 'Maio', color: 'border-l-4 border-yellow-400' },
+            { id: 5, name: 'Junho', color: 'border-l-4 border-red-500' },
+            { id: 6, name: 'Julho', color: 'border-l-4 border-yellow-500' },
+            { id: 7, name: 'Agosto', color: 'border-l-4 border-orange-500' },
+            { id: 8, name: 'Setembro', color: 'border-l-4 border-green-400' },
+            { id: 9, name: 'Outubro', color: 'border-l-4 border-pink-500' },
+            { id: 10, name: 'Novembro', color: 'border-l-4 border-blue-600' },
+            { id: 11, name: 'Dezembro', color: 'border-l-4 border-red-600' }
+        ];
+
+        const TYPES = ['TI', 'Evento Interno', 'Evento Externo', 'Campanha', 'Treinamento', 'Gravação Externa'];
+        const SECTORS = ['Comunicação', 'Diretoria', 'Administrativo', 'RH', 'Infraestrutura', 'TI', 'Visitante'];
+        const STATUS_OPTIONS = ['Planejado', 'Em Execução', 'Concluído', 'Cancelado'];
 
         let db, auth;
 
-        // --- FUNÇÕES DE TEMPLATE (Guarantido Global) ---
+        // --- TEMPLATES ---
 
-        const getDashboardHTML = () => {
-            const acts = window.state.activities;
-            const completed = acts.filter(a => a.status === 'Concluído').length;
-            const rated = acts.filter(a => a.satisfaction && !isNaN(a.satisfaction));
-            const avg = rated.length ? Math.round(rated.reduce((acc, c) => acc + parseFloat(c.satisfaction), 0) / rated.length) : 0;
-            const top = [...acts].filter(a => a.satisfaction).sort((a,b) => b.satisfaction - a.satisfaction).slice(0,5);
+        window.templates = {
+            dashboard: () => {
+                const acts = window.state.activities;
+                const done = acts.filter(a => a.status === 'Concluído').length;
+                const rated = acts.filter(a => a.satisfaction && !isNaN(a.satisfaction));
+                const avg = rated.length ? Math.round(rated.reduce((acc, c) => acc + parseFloat(c.satisfaction), 0) / rated.length) : 0;
+                const top = [...acts].filter(a => a.satisfaction).sort((a,b) => b.satisfaction - a.satisfaction).slice(0,5);
 
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="flex justify-between items-center border-b pb-4">
-                        <h2 class="text-2xl font-bold text-gray-800">Painel Geral</h2>
-                        <button onclick="window.exportPDF()" class="bg-blue-600 text-white px-4 py-2 rounded flex gap-2 items-center text-sm no-print shadow-sm hover:bg-blue-700 transition">
-                            <i data-lucide="printer" size="16"></i> Imprimir Relatório
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-600">
-                            <p class="text-xs text-gray-500 font-bold uppercase">Média Satisfação</p>
-                            <h3 class="text-3xl font-bold text-gray-800">${avg}%</h3>
+                return `
+                    <div class="space-y-6 animate-fadeIn">
+                        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <h2 class="text-xl font-bold text-gray-800">Painel Geral de Desempenho</h2>
+                            <button onclick="window.exportPDF()" class="no-print bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition flex gap-2 items-center">
+                                <i data-lucide="printer" size="16"></i> Exportar Dados
+                            </button>
                         </div>
-                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-green-500">
-                            <p class="text-xs text-gray-500 font-bold uppercase">Ações Concluídas</p>
-                            <h3 class="text-3xl font-bold text-gray-800">${completed}</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Satisfação Média</p><h3 class="text-3xl font-black text-blue-600">${avg}%</h3></div>
+                            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Ações Concluídas</p><h3 class="text-3xl font-black text-green-600">${done}</h3></div>
+                            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total de Ações</p><h3 class="text-3xl font-black text-slate-800">${acts.length}</h3></div>
+                            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Ocorrências Crises</p><h3 class="text-3xl font-black text-red-600">${window.state.crises.length}</h3></div>
                         </div>
-                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-red-500">
-                            <p class="text-xs text-gray-500 font-bold uppercase">Riscos Ativos</p>
-                            <h3 class="text-3xl font-bold text-gray-800">${window.state.crises.length}</h3>
-                        </div>
-                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-indigo-500">
-                            <p class="text-xs text-gray-500 font-bold uppercase">Total Planejado</p>
-                            <h3 class="text-3xl font-bold text-gray-800">${acts.length}</h3>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col">
-                            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="award" class="text-yellow-500"></i> Melhores Avaliados</h3>
-                            <div class="space-y-3">
-                                ${top.map(t => `<div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                    <span class="text-sm font-medium truncate pr-4">${t.eventName || 'Evento s/ nome'}</span>
-                                    <span class="text-sm font-bold text-green-600">${t.satisfaction}%</span>
-                                </div>`).join('') || '<p class="text-sm text-gray-400 italic">Nenhuma avaliação registada.</p>'}
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bell" class="text-blue-500"></i> Mural de Avisos</h3>
-                            <div class="flex gap-2 mb-4 no-print">
-                                <input type="text" id="notif-input" placeholder="Novo aviso..." class="flex-1 border p-2 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500">
-                                <button onclick="window.sendNotif()" class="bg-blue-900 text-white px-3 py-2 rounded text-sm">Postar</button>
-                            </div>
-                            <div class="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
-                                ${window.state.notifications.map(n => `<div class="p-3 bg-yellow-50 border-l-2 border-yellow-400 rounded flex justify-between group">
-                                    <div><p class="text-sm text-yellow-800">${n.text}</p><span class="text-[9px] text-yellow-600 uppercase font-bold">${new Date(n.timestamp).toLocaleString()}</span></div>
-                                    <button onclick="window.deleteNotification('${n.id}')" class="text-yellow-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition"><i data-lucide="x" size="14"></i></button>
-                                </div>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        const getMonthViewHTML = () => {
-            const m = MONTHS_DATA[window.state.selectedMonth];
-            const filteredActs = window.state.activities.filter(a => parseInt(a.month) === m.id);
-            const filteredHolidays = window.state.holidays.filter(h => parseInt(h.month) === m.id);
-
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="bg-white p-6 rounded-lg shadow-sm ${m.color}">
-                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-wide">${m.name} 2026</h2>
-                            <div class="flex gap-2 no-print">
-                                <button onclick="window.addActivity()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex gap-2 items-center hover:bg-blue-700 transition shadow-sm">
-                                    <i data-lucide="plus-circle" size="18"></i> Adicionar Ação
-                                </button>
-                                <button onclick="window.exportPDF()" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-bold flex gap-2 items-center hover:bg-gray-200 transition">
-                                    <i data-lucide="printer" size="18"></i> PDF
-                                </button>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-gray-100">
-                            <div class="flex flex-wrap gap-2">
-                                <div class="no-print flex gap-1 mr-2">
-                                    <input id="h-day" type="text" placeholder="Dia" class="w-10 border rounded p-1 text-xs">
-                                    <input id="h-name" type="text" placeholder="Data Comemorativa" class="w-32 border rounded p-1 text-xs">
-                                    <button onclick="window.addHoliday()" class="bg-gray-800 text-white px-2 py-1 rounded text-xs">Add</button>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="award" class="text-yellow-500"></i> Eventos com Maior Satisfação</h3>
+                                <div class="space-y-3">
+                                    ${top.map(t => `<div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                                        <div class="truncate pr-4"><p class="text-sm font-bold text-gray-800 truncate">${t.eventName || 'S/ Nome'}</p><p class="text-[10px] text-gray-500 uppercase font-bold">${t.type}</p></div>
+                                        <span class="text-sm font-black text-green-600">${t.satisfaction}%</span>
+                                    </div>`).join('') || '<p class="text-sm text-gray-400 italic text-center py-10">Nenhuma avaliação registada.</p>'}
                                 </div>
-                                ${filteredHolidays.map(h => `<span class="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-xs border border-blue-100 flex items-center gap-1 font-medium"><b>${h.day}</b> - ${h.name} <i onclick="window.removeHoliday('${h.id}')" data-lucide="x" size="10" class="cursor-pointer hover:text-red-500 no-print"></i></span>`).join('')}
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="message-square" class="text-blue-500"></i> Mural Unificado</h3>
+                                <div class="flex gap-2 mb-4 no-print">
+                                    <input type="text" id="notif-input" placeholder="Escreva um aviso para todos..." class="flex-1 border p-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white transition outline-none">
+                                    <button onclick="window.sendNotif()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm font-bold">Postar</button>
+                                </div>
+                                <div class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                                    ${window.state.notifications.map(n => `<div class="p-4 bg-blue-50/50 rounded-lg border border-blue-100 flex justify-between group animate-fadeIn">
+                                        <div class="flex-1 pr-4"><p class="text-sm text-blue-900 leading-tight">${n.text}</p><p class="text-[9px] text-blue-400 mt-2 font-black uppercase">${new Date(n.timestamp).toLocaleString()} • PUBLICADO</p></div>
+                                        <button onclick="window.deleteNotif('${n.id}')" class="text-blue-200 group-hover:text-red-500 transition no-print"><i data-lucide="trash-2" size="14"></i></button>
+                                    </div>`).join('') || '<p class="text-sm text-gray-300 text-center py-10">Mural limpo.</p>'}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </div>`;
+            },
+            month: () => {
+                const m = MONTHS[window.state.selectedMonth];
+                const acts = window.state.activities.filter(a => parseInt(a.month) === m.id);
+                const holds = window.state.holidays.filter(h => parseInt(h.month) === m.id);
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-gray-50 text-gray-500 font-bold uppercase text-[10px]">
-                                    <tr>
-                                        <th class="px-4 py-3 min-w-[140px]">Tipo</th>
-                                        <th class="px-4 py-3 min-w-[180px]">Nome do Evento</th>
-                                        <th class="px-4 py-3 min-w-[165px]">Data e Hora</th>
-                                        <th class="px-4 py-3 min-w-[120px]">Público</th>
-                                        <th class="px-4 py-3 min-w-[140px]">Setor Responsável</th>
-                                        <th class="px-4 py-3 min-w-[180px]">Descrição Ocorrência</th>
-                                        <th class="px-4 py-3 min-w-[100px]">Satisfação</th>
-                                        <th class="px-4 py-3 min-w-[120px]">Status</th>
-                                        <th class="px-4 py-3 w-12 no-print"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    ${filteredActs.map(a => `
-                                        <tr class="hover:bg-blue-50/30 transition-colors">
-                                            <td class="px-4 py-3">
-                                                <select onchange="window.saveField('${a.id}', 'type', this.value)" class="w-full p-1 border rounded text-xs font-bold bg-white">
-                                                    ${EVENT_TYPES.map(opt => `<option ${a.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <input type="text" value="${a.eventName || ''}" onblur="window.saveField('${a.id}', 'eventName', this.value)" class="w-full p-1 border rounded text-xs font-medium" placeholder="Digitar...">
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <div class="flex flex-col gap-1">
-                                                    <input type="date" value="${a.date || ''}" min="2026-01-01" max="2026-12-31" onchange="window.saveField('${a.id}', 'date', this.value)" class="p-1 border rounded text-[10px]">
-                                                    <input type="time" value="${a.time || ''}" onchange="window.saveField('${a.id}', 'time', this.value)" class="p-1 border rounded text-[10px]">
-                                                </div>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <select onchange="window.saveField('${a.id}', 'audience', this.value)" class="w-full p-1 border rounded text-[10px] bg-white">
-                                                    ${AUDIENCE_OPTIONS.map(opt => `<option ${a.audience === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <select onchange="window.saveField('${a.id}', 'eventSector', this.value)" class="w-full p-1 border rounded text-[10px] bg-white">
-                                                    ${CRISIS_SECTOR_OPTIONS.map(opt => `<option ${a.eventSector === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <textarea onblur="window.saveField('${a.id}', 'postOccurrence', this.value)" class="w-full p-1 border rounded text-[10px] h-12" placeholder="Notas...">${a.postOccurrence || ''}</textarea>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <div class="flex items-center gap-1">
-                                                    <input type="number" value="${a.satisfaction || ''}" onblur="window.saveField('${a.id}', 'satisfaction', this.value)" class="w-10 border rounded p-1 text-center font-bold" min="0" max="100">
-                                                    <span class="text-[9px] text-gray-400">%</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <select onchange="window.saveField('${a.id}', 'status', this.value)" class="w-full p-1 rounded font-bold text-[10px] border-none ${a.status === 'Concluído' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                                    ${['Planejado','Em Execução','Concluído','Cancelado'].map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-                                                </select>
-                                            </td>
-                                            <td class="px-4 py-3 text-right no-print">
-                                                <button onclick="window.requestDeleteActivity('${a.id}')" class="text-gray-300 hover:text-red-500 transition"><i data-lucide="trash-2" size="16"></i></button>
-                                            </td>
+                return `
+                    <div class="space-y-6 animate-fadeIn">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 ${m.color}">
+                            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div><h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter">${m.name} 2026</h2><p class="text-xs text-gray-500 font-bold">Gestão de entregas e campanhas</p></div>
+                                <div class="flex gap-2 no-print">
+                                    <button onclick="window.addActivity()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-black text-sm transition shadow-lg shadow-blue-200 flex items-center gap-2"><i data-lucide="plus" size="18"></i> ADICIONAR AÇÃO</button>
+                                    <button onclick="window.exportPDF()" class="bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-sm transition hover:bg-slate-200 flex items-center gap-2"><i data-lucide="printer" size="18"></i> PDF</button>
+                                </div>
+                            </div>
+                            <div class="mt-6 pt-5 border-t border-gray-50">
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <div class="no-print flex gap-1 mr-4 bg-gray-50 p-1 rounded-lg border">
+                                        <input id="h-day" type="number" placeholder="Dia" class="w-12 p-1.5 text-xs rounded border-none bg-transparent">
+                                        <input id="h-name" type="text" placeholder="Feriado / Data" class="w-32 p-1.5 text-xs rounded border-none bg-transparent">
+                                        <button onclick="window.addHoliday()" class="bg-slate-800 text-white px-3 py-1.5 rounded-md text-[10px] font-bold">ADD</button>
+                                    </div>
+                                    ${holds.map(h => `<span class="bg-white border border-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-sm flex items-center gap-2 tracking-tight"><span>${h.day}</span> ${h.name.toUpperCase()} <i onclick="window.removeHoliday('${h.id}')" data-lucide="x" size="10" class="cursor-pointer hover:text-red-500 no-print"></i></span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="overflow-x-auto custom-scrollbar">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-widest border-b border-gray-100">
+                                        <tr>
+                                            <th class="px-5 py-4 w-[160px]">Classificação</th>
+                                            <th class="px-5 py-4 min-w-[200px]">Evento</th>
+                                            <th class="px-5 py-4 w-[180px]">Data / Hora</th>
+                                            <th class="px-5 py-4 w-[140px]">Setor Resp.</th>
+                                            <th class="px-5 py-4 min-w-[220px]">Descrição Ocorrência</th>
+                                            <th class="px-5 py-4 w-[100px]">Satisfação</th>
+                                            <th class="px-5 py-4 w-[140px]">Status</th>
+                                            <th class="px-5 py-4 w-12 no-print"></th>
                                         </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ${filteredActs.length === 0 ? '<div class="p-10 text-center text-gray-400 italic">Sem ações registadas para este mês. Clique em "Adicionar Ação".</div>' : ''}
-                    </div>
-                </div>
-            `;
-        };
-
-        const getCalendarViewHTML = () => {
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="flex justify-between items-center border-b pb-4">
-                        <h2 class="text-2xl font-bold text-gray-800">Calendário Consolidado 2026</h2>
-                        <button onclick="window.exportPDF()" class="no-print bg-gray-800 text-white px-3 py-1.5 rounded flex gap-2 items-center text-sm"><i data-lucide="printer" size="14"></i> Imprimir Tudo</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${MONTHS_DATA.map(m => {
-                            const mActs = window.state.activities.filter(a => parseInt(a.month) === m.id);
-                            return `
-                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-auto min-h-[160px] print-break-inside-avoid">
-                                    <div class="px-4 py-2 ${m.color} bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                                        <h3 class="font-bold text-gray-700">${m.name}</h3>
-                                        <span class="text-[10px] font-bold bg-white border px-2 py-0.5 rounded-full text-gray-500">${mActs.length}</span>
-                                    </div>
-                                    <div class="p-3 flex-1">
-                                        <ul class="space-y-1">
-                                            ${mActs.map(a => `<li class="text-[10px] flex items-start gap-1.5"><span class="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${a.status === 'Concluído' ? 'bg-green-500' : 'bg-blue-400'}"></span><span class="truncate">${a.eventName || 'Sem nome'}</span></li>`).join('') || '<li class="text-[10px] text-gray-300 italic">Sem eventos</li>'}
-                                        </ul>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-        };
-
-        const getCrisisViewHTML = () => {
-            const crises = window.state.crises;
-            return `
-                <div class="space-y-6 animate-fadeIn">
-                    <div class="bg-red-900 text-white p-6 rounded-lg shadow-lg flex justify-between items-center no-print">
-                        <div><h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><i data-lucide="shield-alert"></i> Gestão de Riscos</h2><p class="text-red-200 text-sm">Monitoramento preventivo e gestão de crises.</p></div>
-                        <button onclick="window.addCrisis()" class="bg-white text-red-900 px-6 py-3 rounded-lg font-bold uppercase tracking-wider shadow hover:bg-gray-100 transition">Registar Ocorrência</button>
-                    </div>
-                    <div class="grid gap-6">
-                        ${crises.map((c, i) => `
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative print-break-inside-avoid">
-                                <button onclick="window.requestDeleteCrisis('${c.id}')" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 no-print"><i data-lucide="trash-2" size="18"></i></button>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 border-b pb-4">
-                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Data</label><input type="date" value="${c.date}" onchange="window.saveCrisisField('${c.id}', 'date', this.value)" class="w-full border rounded p-1.5 text-sm"></div>
-                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Nível de Risco</label><select onchange="window.saveCrisisField('${c.id}', 'riskLevel', this.value)" class="w-full border rounded p-1.5 text-sm font-bold">
-                                        ${RISK_LEVELS.map(r => `<option ${c.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
-                                    </select></div>
-                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Setor</label><select onchange="window.saveCrisisField('${c.id}', 'sector', this.value)" class="w-full border rounded p-1.5 text-sm">
-                                        ${CRISIS_SECTOR_OPTIONS.map(s => `<option ${c.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
-                                    </select></div>
-                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Responsável</label><select onchange="window.saveCrisisField('${c.id}', 'responsible', this.value)" class="w-full border rounded p-1.5 text-sm">
-                                        ${RESPONSIBLE_OPTIONS.map(r => `<option ${c.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}
-                                    </select></div>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="p-3 bg-red-50 rounded border border-red-100"><label class="block text-[10px] font-bold text-red-800 uppercase mb-2">Plano de Ação Corretiva</label><textarea onblur="window.saveCrisisField('${c.id}', 'correctiveAction', this.value)" class="w-full bg-white border-none rounded p-2 text-sm h-24 shadow-inner">${c.correctiveAction || ''}</textarea></div>
-                                    <div class="grid grid-cols-1 gap-2">
-                                        <div class="p-2 bg-gray-50 rounded border border-gray-100"><label class="block text-[9px] font-bold text-gray-500 uppercase">Riscos Envolvidos</label><textarea onblur="window.saveCrisisField('${c.id}', 'risks', this.value)" class="w-full bg-transparent border-none text-xs h-12">${c.risks || ''}</textarea></div>
-                                        <div class="p-2 bg-blue-50 rounded border border-blue-100"><label class="block text-[9px] font-bold text-blue-500 uppercase">Aprendizados</label><textarea onblur="window.saveCrisisField('${c.id}', 'learning', this.value)" class="w-full bg-transparent border-none text-xs h-12">${c.learning || ''}</textarea></div>
-                                    </div>
-                                </div>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-50">
+                                        ${acts.map(a => `
+                                            <tr class="group hover:bg-blue-50/20 transition-colors">
+                                                <td class="px-5 py-4">
+                                                    <select onchange="window.saveField('${a.id}', 'type', this.value)" class="w-full p-2 border border-gray-200 rounded-lg text-xs font-black uppercase bg-white">
+                                                        ${TYPES.map(opt => `<option ${a.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <input type="text" value="${a.eventName || ''}" onblur="window.saveField('${a.id}', 'eventName', this.value)" class="w-full p-2 border border-gray-200 rounded-lg text-xs font-bold" placeholder="Nome da ação...">
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <div class="flex flex-col gap-1">
+                                                        <input type="date" value="${a.date || ''}" min="2026-01-01" max="2026-12-31" onchange="window.saveField('${a.id}', 'date', this.value)" class="p-1.5 border border-gray-100 rounded text-xs font-medium">
+                                                        <input type="time" value="${a.time || ''}" onchange="window.saveField('${a.id}', 'time', this.value)" class="p-1.5 border border-gray-100 rounded text-xs font-medium">
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <select onchange="window.saveField('${a.id}', 'eventSector', this.value)" class="w-full p-2 border border-gray-100 rounded-lg text-[10px] font-bold bg-white">
+                                                        ${SECTORS.map(opt => `<option ${a.eventSector === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <textarea onblur="window.saveField('${a.id}', 'postOccurrence', this.value)" class="w-full p-2 border border-gray-100 rounded-lg text-xs h-12 leading-snug" placeholder="Detalhes da entrega...">${a.postOccurrence || ''}</textarea>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="number" value="${a.satisfaction || ''}" onblur="window.saveField('${a.id}', 'satisfaction', this.value)" class="w-12 p-2 border border-gray-200 rounded-lg text-center font-black text-blue-600" min="0" max="100">
+                                                        <span class="text-[9px] font-bold text-gray-400">%</span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <select onchange="window.saveField('${a.id}', 'status', this.value)" class="w-full p-2 rounded-lg font-black text-[10px] uppercase border-none cursor-pointer ${a.status === 'Concluído' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
+                                                        ${STATUS_OPTIONS.map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                                    </select>
+                                                </td>
+                                                <td class="px-5 py-4 text-right no-print">
+                                                    <button onclick="window.delAct('${a.id}')" class="text-gray-300 hover:text-red-500 transition p-1"><i data-lucide="trash-2" size="18"></i></button>
+                                                </td>
+                                            </tr>`).join('')}
+                                    </tbody>
+                                </table>
                             </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+                            ${acts.length === 0 ? '<div class="p-20 text-center text-gray-400 font-medium bg-gray-50/50">Nenhuma ação planeada para este mês.</div>' : ''}
+                        </div>
+                    </div>`;
+            },
+            calendar: () => {
+                return `
+                    <div class="space-y-6 animate-fadeIn">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                            <h2 class="text-xl font-bold text-gray-800">Cronograma Consolidado 2026</h2>
+                            <button onclick="window.exportPDF()" class="no-print bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Imprimir Calendário Anual</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            ${MONTHS.map(m => {
+                                const mActs = window.state.activities.filter(a => parseInt(a.month) === m.id);
+                                return `
+                                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[180px] print-break-inside-avoid">
+                                        <div class="px-4 py-3 ${m.color} bg-gray-50/80 border-b border-gray-100 flex justify-between items-center">
+                                            <h3 class="font-black text-xs uppercase tracking-tighter text-slate-700">${m.name}</h3>
+                                            <span class="text-[9px] font-black bg-white border px-2 py-0.5 rounded-full text-slate-500 shadow-sm">${mActs.length} AÇÕES</span>
+                                        </div>
+                                        <div class="p-3 flex-1 overflow-y-auto custom-scrollbar max-h-48">
+                                            <ul class="space-y-2">
+                                                ${mActs.map(a => `
+                                                    <li class="text-[10px] flex items-start gap-2 leading-tight">
+                                                        <span class="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${a.status === 'Concluído' ? 'bg-green-500' : 'bg-blue-400'}"></span>
+                                                        <div class="flex-1">
+                                                            <span class="font-bold text-slate-700">${a.date ? a.date.split('-')[2] : ''}</span>
+                                                            <span class="text-slate-500 truncate">${a.eventName || 'S/ Nome'}</span>
+                                                        </div>
+                                                    </li>`).join('') || '<li class="text-[10px] text-gray-300 italic text-center py-4">Sem eventos</li>'}
+                                            </ul>
+                                        </div>
+                                    </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            },
+            crisis: () => {
+                const crises = window.state.crises;
+                return `
+                    <div class="space-y-6 animate-fadeIn">
+                        <div class="bg-red-800 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+                            <div><h2 class="text-2xl font-black uppercase tracking-tighter flex items-center gap-2"><i data-lucide="shield-alert"></i> Riscos & Crises</h2><p class="text-red-200 text-xs font-bold uppercase tracking-widest">Monitoramento e Prevenção Institucional</p></div>
+                            <button onclick="window.addCrisis()" class="bg-white text-red-800 px-6 py-3 rounded-xl font-black uppercase text-sm shadow-xl hover:bg-gray-100 transition active:scale-95">Registar Nova Ocorrência</button>
+                        </div>
+                        <div class="grid grid-cols-1 gap-6">
+                            ${crises.map((c, i) => `
+                                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 relative print-break-inside-avoid">
+                                    <button onclick="window.delCrisis('${c.id}')" class="absolute top-6 right-6 text-gray-300 hover:text-red-500 no-print transition"><i data-lucide="trash-2" size="20"></i></button>
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 border-b border-gray-50 pb-6">
+                                        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Data da Ocorrência</label><input type="date" value="${c.date}" onchange="window.saveCrisisField('${c.id}', 'date', this.value)" class="w-full border border-gray-100 rounded-lg p-2 text-sm font-bold bg-gray-50 focus:bg-white transition"></div>
+                                        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nível de Risco</label><select onchange="window.saveCrisisField('${c.id}', 'riskLevel', this.value)" class="w-full border border-gray-100 rounded-lg p-2 text-sm font-black bg-gray-50 focus:bg-white transition uppercase text-red-700">
+                                            ${['Sem relevância crítica', 'Leve', 'Moderada', 'Potencial', 'Grave', 'Reputacional Extrema'].map(r => `<option ${c.riskLevel === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                        </select></div>
+                                        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Setor Envolvido</label><select onchange="window.saveCrisisField('${c.id}', 'sector', this.value)" class="w-full border border-gray-100 rounded-lg p-2 text-sm font-bold bg-gray-50 focus:bg-white transition">
+                                            ${SECTORS.map(s => `<option ${c.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                        </select></div>
+                                        <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Responsável Registo</label><select onchange="window.saveCrisisField('${c.id}', 'responsible', this.value)" class="w-full border border-gray-100 rounded-lg p-2 text-sm font-bold bg-gray-50 focus:bg-white transition">
+                                            ${['Vera Nascimento', 'Gisely Rocha', 'Diretoria'].map(r => `<option ${c.responsible === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                        </select></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="space-y-4">
+                                            <div class="p-4 bg-red-50/50 rounded-xl border border-red-100"><label class="block text-[10px] font-black text-red-800 uppercase tracking-widest mb-2">Plano de Ação Corretiva</label><textarea onblur="window.saveCrisisField('${c.id}', 'correctiveAction', this.value)" class="w-full bg-white border-none rounded-lg p-3 text-sm h-24 shadow-inner resize-none focus:ring-1 focus:ring-red-200" placeholder="Descreva as medidas imediatas tomadas...">${c.correctiveAction || ''}</textarea></div>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100"><label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Aprendizados / Melhorias</label><textarea onblur="window.saveCrisisField('${c.id}', 'learning', this.value)" class="w-full bg-white border-none rounded-lg p-3 text-sm h-24 shadow-inner resize-none focus:ring-1 focus:ring-slate-200" placeholder="O que aprendemos para evitar a recorrência?">${c.learning || ''}</textarea></div>
+                                        </div>
+                                    </div>
+                                </div>`).join('')}
+                            ${crises.length === 0 ? `<div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center gap-3"><i data-lucide="shield-check" class="text-gray-200" size="48"></i><p class="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhum risco registado no momento.</p></div>` : ''}
+                        </div>
+                    </div>`;
+            },
+            reports: () => {
+                const m = MONTHS[window.state.selectedMonth];
+                const acts = window.state.activities.filter(a => parseInt(a.month) === m.id);
+                const done = acts.filter(a => a.status === 'Concluído').length;
+                const rep = window.state.monthlyReports[m.id] || { explanation: '', highlights: '' };
+
+                return `
+                    <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div><h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter">Relatório de Gestão</h2><p class="text-xs text-blue-600 font-bold uppercase tracking-widest">${m.name} 2026</p></div>
+                            <div class="flex gap-2 no-print">
+                                <button onclick="window.exportPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-black text-sm transition shadow-lg shadow-indigo-100">GERAR PDF EXECUTIVO</button>
+                                <button onclick="window.clearRep()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-bold text-xs transition hover:bg-red-100">LIMPAR</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="p-6 bg-slate-900 rounded-2xl text-center shadow-lg"><span class="text-3xl font-black text-white block leading-none">${acts.length}</span><span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 block">Planejado</span></div>
+                            <div class="p-6 bg-green-600 rounded-2xl text-center shadow-lg"><span class="text-3xl font-black text-white block leading-none">${done}</span><span class="text-[9px] font-bold text-green-200 uppercase tracking-widest mt-2 block">Concluído</span></div>
+                            <div class="p-6 bg-yellow-500 rounded-2xl text-center shadow-lg"><span class="text-3xl font-black text-white block leading-none">${acts.length - done}</span><span class="text-[9px] font-bold text-yellow-100 uppercase tracking-widest mt-2 block">Pendente</span></div>
+                            <div class="p-6 bg-blue-600 rounded-2xl text-center shadow-lg"><span class="text-3xl font-black text-white block leading-none">${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%</span><span class="text-[9px] font-bold text-blue-200 uppercase tracking-widest mt-2 block">Eficiência</span></div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-white p-8 rounded-2xl border shadow-sm group">
+                                <div class="flex justify-between mb-4 items-center border-b border-gray-50 pb-4"><h3 class="font-black text-slate-800 text-lg uppercase tracking-tighter">1. Análise Geral de Entregas</h3><button onclick="window.autoGenText()" class="no-print bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase hover:bg-blue-100 transition">Sugerir Texto</button></div>
+                                <textarea onblur="window.saveReport('${m.id}', 'explanation', this.value)" class="w-full bg-slate-50 border-none rounded-xl p-6 h-56 focus:ring-2 focus:ring-blue-500 transition text-gray-700 leading-relaxed font-medium shadow-inner">${rep.explanation || ''}</textarea>
+                            </div>
+                            <div class="bg-white p-8 rounded-2xl border shadow-sm">
+                                <h3 class="font-black text-slate-800 text-lg uppercase tracking-tighter mb-4 border-b border-gray-50 pb-4">2. Pontos de Destaque</h3>
+                                <textarea onblur="window.saveReport('${m.id}', 'highlights', this.value)" class="w-full bg-slate-50 border-none rounded-xl p-6 h-40 focus:ring-2 focus:ring-green-500 transition text-gray-700 font-medium shadow-inner">${rep.highlights || ''}</textarea>
+                            </div>
+                        </div>
+                    </div>`;
+            }
         };
 
-        const getReportsViewHTML = () => {
-            const m = MONTHS_DATA[window.state.selectedMonth];
-            const acts = window.state.activities.filter(a => parseInt(a.month) === m.id);
-            const total = acts.length;
-            const done = acts.filter(a => a.status === 'Concluído').length;
-            const rep = window.state.monthlyReports[m.id] || { explanation: '', highlights: '' };
+        // --- LÓGICA DE INTERAÇÃO ---
 
-            return `
-                <div class="space-y-8 animate-fadeIn max-w-5xl mx-auto">
-                    <div class="flex justify-between items-center border-b pb-4">
-                        <div><h2 class="text-2xl font-bold text-gray-800">Relatório Executivo</h2><p class="text-gray-500 font-medium">Referência: <span class="text-blue-600 uppercase">${m.name} 2026</span></p></div>
-                        <div class="flex gap-2 no-print">
-                            <button onclick="window.exportPDF()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold shadow-md hover:bg-indigo-700 transition">Gerar PDF para Gestão</button>
-                            <button onclick="window.requestClearReport()" class="bg-red-50 text-red-600 px-4 py-2 rounded font-bold hover:bg-red-100 transition">Limpar</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="p-5 bg-gray-50 rounded-xl text-center border"><span class="text-3xl font-black text-gray-800 block">${total}</span><span class="text-[10px] font-bold text-gray-500 uppercase">Meta Mensal</span></div>
-                        <div class="p-5 bg-green-50 rounded-xl text-center border border-green-100"><span class="text-3xl font-black text-green-600 block">${done}</span><span class="text-[10px] font-bold text-green-700 uppercase">Concluídas</span></div>
-                        <div class="p-5 bg-yellow-50 rounded-xl text-center border border-yellow-100"><span class="text-3xl font-black text-yellow-600 block">${total - done}</span><span class="text-[10px] font-bold text-yellow-700 uppercase">Pendentes</span></div>
-                        <div class="p-5 bg-blue-50 rounded-xl text-center border border-blue-100"><span class="text-3xl font-black text-blue-600 block">${total > 0 ? Math.round((done/total)*100) : 0}%</span><span class="text-[10px] font-bold text-blue-700 uppercase">Eficiência</span></div>
-                    </div>
-                    <div class="space-y-6">
-                        <div class="bg-white p-6 rounded-xl border shadow-sm">
-                            <div class="flex justify-between mb-4 items-center"><h3 class="font-bold text-gray-800 text-lg uppercase tracking-tight">1. Análise de Resultados</h3><button onclick="window.autoGenText()" class="no-print bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold hover:bg-blue-100 transition">Gerar Texto Automático</button></div>
-                            <textarea onblur="window.saveReport('${m.id}', 'explanation', this.value)" class="w-full border-2 border-gray-100 rounded-lg p-4 h-48 focus:border-blue-500 outline-none text-gray-700 leading-relaxed">${rep.explanation || ''}</textarea>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl border shadow-sm">
-                            <h3 class="font-bold text-gray-800 text-lg uppercase tracking-tight mb-4">2. Destaques Positivos</h3>
-                            <textarea onblur="window.saveReport('${m.id}', 'highlights', this.value)" class="w-full border-2 border-gray-100 rounded-lg p-4 h-32 focus:border-green-500 outline-none text-gray-700">${rep.highlights || ''}</textarea>
-                        </div>
-                    </div>
-                </div>
-            `;
+        window.changeView = (v) => { 
+            window.state.view = v; 
+            window.renderApp(); 
         };
 
-        // --- LÓGICA DE NAVEGAÇÃO E DADOS ---
+        window.changeMonth = (m) => { 
+            window.state.selectedMonth = m; 
+            window.renderApp(); 
+        };
 
         window.renderApp = () => {
             const content = document.getElementById('app-content');
             if(!content) return;
 
+            // Ativa navegação
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.toggle('nav-btn-active', btn.dataset.view === window.state.view);
-                btn.classList.toggle('nav-btn-inactive', btn.dataset.view !== window.state.view);
+                const isActive = btn.dataset.view === window.state.view;
+                btn.classList.toggle('nav-btn-active', isActive);
+                btn.classList.toggle('nav-btn-inactive', !isActive);
             });
 
-            let monthSelector = '';
+            // Constrói Month Selector
+            let mSelector = '';
             if (['month', 'reports'].includes(window.state.view)) {
-                monthSelector = `
-                    <div class="mb-8 overflow-x-auto pb-4 no-print custom-scrollbar">
+                mSelector = `
+                    <div class="mb-6 overflow-x-auto pb-2 no-print custom-scrollbar">
                         <div class="flex gap-2 min-w-max">
-                            ${MONTHS_DATA.map(m => `
-                                <button onclick="window.changeMonth(${m.id})" class="px-5 py-2.5 rounded-full text-sm font-bold border transition-all ${window.state.selectedMonth === m.id ? 'bg-blue-900 text-white border-blue-900 shadow-md ring-2 ring-offset-2 ring-blue-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}">
+                            ${MONTHS.map(m => `
+                                <button onclick="window.changeMonth(${m.id})" class="px-4 py-2 rounded-full text-xs font-black border transition-all ${window.state.selectedMonth === m.id ? 'bg-blue-900 text-white border-blue-900 shadow-lg scale-105' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'} uppercase tracking-tight">
                                     ${m.name}
                                 </button>`).join('')}
                         </div>
                     </div>`;
             }
 
-            let viewHTML = '';
-            switch(window.state.view) {
-                case 'dashboard': viewHTML = getDashboardHTML(); break;
-                case 'month': viewHTML = getMonthViewHTML(); break;
-                case 'calendar': viewHTML = getCalendarViewHTML(); break;
-                case 'crisis': viewHTML = getCrisisViewHTML(); break;
-                case 'reports': viewHTML = getReportsViewHTML(); break;
-            }
-
-            content.innerHTML = monthSelector + viewHTML;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
+            const viewFunc = window.templates[window.state.view];
+            content.innerHTML = mSelector + (viewFunc ? viewFunc() : '');
+            
+            lucide.createIcons();
+            // Limpa o spinner se existir
+            document.getElementById('loading-spinner')?.classList.add('hidden');
         };
 
-        // --- EXPOSIÇÃO GLOBAL DE FUNÇÕES ---
-        window.changeView = (v) => { window.state.view = v; window.renderApp(); };
-        window.changeMonth = (m) => { window.state.selectedMonth = m; window.renderApp(); };
-        window.toggleMobileMenu = () => document.getElementById('mobile-menu')?.classList.toggle('hidden');
-        window.exportPDF = () => { setTimeout(() => window.print(), 100); };
-        window.closeModal = () => document.getElementById('modal-overlay')?.classList.add('hidden');
-        window.openConfirm = (msg, cb) => {
-            const m = document.getElementById('modal-overlay'), t = document.getElementById('modal-message'), b = document.getElementById('modal-confirm-btn');
-            t.innerText = msg; b.onclick = () => { cb(); window.closeModal(); }; m.classList.remove('hidden');
-        };
+        // --- DATABASE OPERATIONS ---
 
-        // --- DB OPERATIONS ---
         window.addActivity = async () => {
-            const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '', time: '', eventSector: 'Comunicação', postOccurrence: '', satisfaction: '', status: 'Planejado', createdAt: new Date().toISOString() };
+            const d = { month: window.state.selectedMonth, type: 'Evento Interno', eventName: '', audience: 'Interno', date: '2026-01-01', time: '09:00', eventSector: 'Comunicação', postOccurrence: '', satisfaction: '', status: 'Planejado', createdAt: new Date().toISOString() };
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), d);
         };
+
         window.saveField = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), { [f]: v });
-        window.requestDeleteActivity = (id) => window.openConfirm("Deseja excluir esta ação?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id)));
+        
+        window.delAct = (id) => window.openConfirm("Deseja excluir esta ação?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id)));
 
         window.addCrisis = async () => {
-            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Sem relevância crítica', sector: 'Comunicação', responsible: 'Vera Nascimento', correctiveAction: '', risks: '', learning: '', createdAt: new Date().toISOString() };
+            const d = { date: new Date().toISOString().split('T')[0], riskLevel: 'Sem relevância crítica', sector: 'Comunicação', responsible: 'Vera Nascimento', correctiveAction: '', learning: '', createdAt: new Date().toISOString() };
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), d);
         };
+
         window.saveCrisisField = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id), { [f]: v });
-        window.requestDeleteCrisis = (id) => window.openConfirm("Excluir este registo de crise?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id)));
+        
+        window.delCrisis = (id) => window.openConfirm("Excluir registo de crise?", () => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'crises', id)));
 
         window.sendNotif = async () => {
             const i = document.getElementById('notif-input');
             if(i?.value.trim()) { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), { text: i.value, timestamp: new Date().toISOString(), author: 'Admin' }); i.value = ''; }
         };
-        window.deleteNotification = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
+
+        window.deleteNotif = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
 
         window.addHoliday = async () => {
             const d = document.getElementById('h-day')?.value, n = document.getElementById('h-name')?.value;
-            if(d && n) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), { month: window.state.selectedMonth, day: d, name: n });
+            if(d && n) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'holidays'), { month: window.state.selectedMonth, day: d.padStart(2,'0'), name: n });
         };
+
         window.removeHoliday = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'holidays', id));
 
         window.saveReport = async (m, f, v) => await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', m.toString()), { [f]: v }, { merge: true });
-        window.requestClearReport = () => window.openConfirm("Limpar relatório?", () => setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', window.state.selectedMonth.toString()), { explanation: '', highlights: '' }));
+
         window.autoGenText = () => {
-            const m = MONTHS_DATA[window.state.selectedMonth].name;
+            const m = MONTHS[window.state.selectedMonth].name;
             const acts = window.state.activities.filter(a => parseInt(a.month) === window.state.selectedMonth);
             const done = acts.filter(a => a.status === 'Concluído').length;
-            const txt = `ANÁLISE DE ENTREGAS - ${m.toUpperCase()}\n\nO mês encerrou com ${acts.length} ações planeadas e ${done} metas atingidas. Eficiência operacional de ${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%.`;
+            const txt = `ANÁLISE DE ENTREGAS - ${m.toUpperCase()}\n\nEste mês encerrou com ${acts.length} ações coordenadas pelo Setor de Comunicação. Foram atingidas ${done} metas previstas, representando uma eficiência operacional de ${acts.length > 0 ? Math.round((done/acts.length)*100) : 0}%. O fluxo de trabalho manteve-se constante em conformidade com o planeamento estratégico de 2026.`;
             window.saveReport(window.state.selectedMonth, 'explanation', txt);
-        };
-        window.handleSave = () => {
-            const b = event.target.closest('button'), t = b.innerHTML;
-            b.innerHTML = '<i data-lucide="cloud-check"></i> Sincronizado!';
-            b.classList.add('bg-green-700');
-            setTimeout(() => { b.innerHTML = t; b.classList.remove('bg-green-700'); lucide.createIcons(); }, 2000);
+            window.renderApp();
         };
 
-        // --- INICIALIZAÇÃO ---
-        async function init() {
+        window.clearRep = () => window.openConfirm("Limpar relatório?", () => setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', window.state.selectedMonth.toString()), { explanation: '', highlights: '' }));
+
+        window.toggleMobileMenu = () => document.getElementById('mobile-menu')?.classList.toggle('hidden');
+        window.closeModal = () => document.getElementById('modal-overlay')?.classList.add('hidden');
+        window.openConfirm = (msg, cb) => {
+            const m = document.getElementById('modal-overlay'), t = document.getElementById('modal-message'), b = document.getElementById('modal-confirm-btn');
+            t.innerText = msg; b.onclick = () => { cb(); window.closeModal(); }; m.classList.remove('hidden');
+        };
+        window.exportPDF = () => { setTimeout(() => window.print(), 100); };
+        window.handleSave = () => { const b = event.target.closest('button'), t = b.innerHTML; b.innerHTML = '<i data-lucide="cloud-check"></i> Sincronizado!'; b.classList.add('bg-green-700'); setTimeout(() => { b.innerHTML = t; b.classList.remove('bg-green-700'); lucide.createIcons(); }, 1500); };
+
+        // --- INICIALIZAÇÃO FIREBASE ---
+
+        async function start() {
             const dateEl = document.getElementById('print-date');
             if(dateEl) dateEl.innerText = new Date().toLocaleDateString();
 
@@ -506,21 +532,21 @@
             auth = getAuth(app);
             db = getFirestore(app);
 
+            // Autenticação Silenciosa para garantir permissões de leitura/escrita
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) { console.error("Auth Error", e); }
+            } catch (e) { console.warn("Modo Offline de Auth", e); }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    document.getElementById('connection-status-dot')?.classList.replace('bg-gray-400', 'bg-green-500');
-                    document.getElementById('user-display').innerText = 'Painel Sincronizado';
-                    document.getElementById('loading-spinner')?.classList.add('hidden');
+                    document.getElementById('conn-dot')?.classList.replace('bg-gray-400', 'bg-green-500');
+                    document.getElementById('conn-text').innerText = 'Painel Sincronizado';
                     
-                    // Listeners Unificados
+                    // Listeners Unificados em Tempo Real
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), s => { window.state.activities = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'crises'), s => { window.state.crises = s.docs.map(d => ({id: d.id, ...d.data()})); window.renderApp(); });
                     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'notifications'), s => { window.state.notifications = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); window.renderApp(); });
@@ -530,7 +556,7 @@
             });
         }
 
-        init();
+        start();
     </script>
 </body>
 </html>
